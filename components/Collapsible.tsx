@@ -5,13 +5,11 @@ import { useState, type ReactNode } from "react";
 export function Collapsible({
   title,
   children,
-  defaultOpen = false,
 }: {
   title: string;
   children: ReactNode;
-  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = useState(false);
 
   return (
     <div className="collapsible">
@@ -21,10 +19,8 @@ export function Collapsible({
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
+        <span className="chev">⌄</span>
         <span>{title}</span>
-        <span className={`chevron ${open ? "chevron-open" : ""}`} aria-hidden>
-          ⌄
-        </span>
       </button>
       {open && <div className="collapsible-body">{children}</div>}
     </div>

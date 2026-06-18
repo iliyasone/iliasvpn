@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const RU_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
+const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
   ["year", 365 * 24 * 3600],
   ["month", 30 * 24 * 3600],
   ["day", 24 * 3600],
@@ -13,13 +13,13 @@ const RU_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
 const rtf = new Intl.RelativeTimeFormat("ru", { numeric: "auto" });
 
 function relative(iso: string, now: number): string {
-  const diffSec = Math.round((new Date(iso).getTime() - now) / 1000);
-  const abs = Math.abs(diffSec);
+  const diff = Math.round((new Date(iso).getTime() - now) / 1000);
+  const abs = Math.abs(diff);
   if (abs < 45) return "только что";
-  for (const [unit, secs] of RU_UNITS) {
-    if (abs >= secs) return rtf.format(Math.round(diffSec / secs), unit);
+  for (const [unit, secs] of UNITS) {
+    if (abs >= secs) return rtf.format(Math.round(diff / secs), unit);
   }
-  return rtf.format(Math.round(diffSec / 60), "minute");
+  return rtf.format(Math.round(diff / 60), "minute");
 }
 
 export function RelativeTime({ iso }: { iso: string }) {

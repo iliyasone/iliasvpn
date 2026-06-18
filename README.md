@@ -35,8 +35,10 @@ Browser ──fetch──▶ /api/messages?category=…  ─┐
   demand. The viewer renders it inside a **sandboxed iframe** (no scripts), and
   the endpoint refuses any UID whose sender doesn't match the category, so it
   can't be used to read unrelated inbox mail.
-- The pages **poll** every few seconds, highlight a freshly-arrived code/link,
-  and play a soft chime — so a code you just requested shows up on its own.
+- The pages **poll** every few seconds. A code/link that arrived in the last
+  ten minutes is shown prominently at the top; otherwise nothing is highlighted
+  and you just see the list of related emails. So a code you just requested
+  shows up on its own, without leaving stale ones lying around.
 
 The login email shown in the instructions comes from the `EMAIL` (or
 `LOGIN_EMAIL`) environment variable and is read on the server.
@@ -107,9 +109,9 @@ is never cached.
 
 ```
 app/
-  page.tsx              Landing — choose a flow
-  blancvpn/page.tsx     BlancVPN: install + login by code + Новости
-  claude/page.tsx       Claude.ai: login by secure link
+  page.tsx              Landing — two logo cards
+  blancvpn/page.tsx     BlancVPN: install + login by code + emails
+  claude/page.tsx       Claude.ai: login by secure link + emails
   api/messages/route.ts List endpoint (per category)
   api/message/route.ts  Single full-email endpoint
 lib/
@@ -117,7 +119,11 @@ lib/
   extract.ts            Pull code / login URL out of an email
   config.ts             Env-var reading
   install-links.ts      BlancVPN download links
-components/             React UI (polling, hero cards, email viewer, …)
+components/
+  Inbox.tsx             Recent code/link + merged email list
+  EmailList.tsx         Inbox-style list of related emails
+  EmailViewer.tsx       Renders an email in a sandboxed iframe
+public/logos/           BlancVPN and Claude logos
 ```
 
 ---

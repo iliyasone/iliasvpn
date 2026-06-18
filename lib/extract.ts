@@ -1,13 +1,3 @@
-/**
- * Pulls the useful bit out of each kind of email:
- *  - BlancVPN: a numeric login code (lives in the subject line).
- *  - Claude.ai: the "secure link to log in" URL (lives in the HTML body).
- */
-
-/**
- * BlancVPN subjects look like: "123456 is your BlancVPN login code".
- * We grab the code from the subject first, then fall back to the body.
- */
 export function extractLoginCode(
   subject: string,
   text: string,
@@ -18,11 +8,6 @@ export function extractLoginCode(
   return fromText?.[1];
 }
 
-/**
- * Claude.ai "Secure link to log in" emails carry the magic link inside a CTA
- * button. We collect every href, drop the boilerplate (images, unsubscribe,
- * legal pages), then prefer the link that looks like a login/magic link.
- */
 export function extractClaudeLoginUrl(
   html: string,
   text: string,
@@ -59,7 +44,6 @@ function decodeEntities(s: string): string {
     .replace(/&#x2F;/g, "/");
 }
 
-/** A short, single-line plain-text preview for list rows. */
 export function snippet(text: string, max = 160): string {
   return text.replace(/\s+/g, " ").trim().slice(0, max);
 }

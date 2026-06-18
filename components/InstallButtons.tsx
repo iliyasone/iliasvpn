@@ -25,7 +25,6 @@ export function InstallButtons() {
     setDetected(detectPlatform());
   }, []);
 
-  // Move the detected device to the front of the core three.
   const core = [...CORE_INSTALL_LINKS].sort((a, b) => {
     if (a.platform === detected) return -1;
     if (b.platform === detected) return 1;
@@ -33,43 +32,31 @@ export function InstallButtons() {
   });
 
   return (
-    <div className="install-grid">
+    <div className="install-links">
       {core.map((link) => (
-        <InstallCard
+        <Chip
           key={link.platform}
           link={link}
-          highlighted={link.platform === detected}
+          active={link.platform === detected}
         />
       ))}
       {EXTRA_INSTALL_LINKS.map((link) => (
-        <InstallCard key={link.platform} link={link} highlighted={false} />
+        <Chip key={link.platform} link={link} active={false} />
       ))}
     </div>
   );
 }
 
-function InstallCard({
-  link,
-  highlighted,
-}: {
-  link: InstallLink;
-  highlighted: boolean;
-}) {
+function Chip({ link, active }: { link: InstallLink; active: boolean }) {
   return (
     <a
       href={link.url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`install-card ${highlighted ? "install-card-active" : ""}`}
+      className={`install-link ${active ? "install-link-active" : ""}`}
     >
-      <span className="install-icon" aria-hidden>
-        {link.icon}
-      </span>
-      <span className="install-text">
-        <span className="install-label">{link.label}</span>
-        <span className="install-hint">{link.hint}</span>
-      </span>
-      {highlighted && <span className="install-badge">ваше устройство</span>}
+      {link.label}
+      <span>{link.hint}</span>
     </a>
   );
 }

@@ -29,18 +29,16 @@ export function EmailViewer({
     };
   }, [category, uid]);
 
-  if (error) return <p className="email-viewer-msg">Не удалось загрузить письмо: {error}</p>;
-  if (!mail) return <p className="email-viewer-msg">Загрузка письма…</p>;
+  if (error) return <p className="viewer-msg">Не удалось загрузить письмо</p>;
+  if (!mail) return <p className="viewer-msg">Загрузка…</p>;
 
   if (mail.html) {
     return (
-      // Sandboxed: the email's own HTML/CSS renders but cannot run scripts,
-      // submit forms, or touch this page. allow-popups lets links open.
       <iframe
         title={mail.subject}
         className="email-frame"
         sandbox="allow-popups allow-popups-to-escape-sandbox"
-        srcDoc={wrapHtml(mail.html)}
+        srcDoc={wrap(mail.html)}
       />
     );
   }
@@ -48,9 +46,6 @@ export function EmailViewer({
   return <pre className="email-text">{mail.text || "(пустое письмо)"}</pre>;
 }
 
-function wrapHtml(html: string): string {
-  return `<!doctype html><html><head><meta charset="utf-8">
-<base target="_blank">
-<style>html,body{margin:0;padding:12px;background:#fff;color:#111;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}img{max-width:100%;height:auto}a{color:#2563eb}</style>
-</head><body>${html}</body></html>`;
+function wrap(html: string): string {
+  return `<!doctype html><html><head><meta charset="utf-8"><base target="_blank"><style>html,body{margin:0;padding:14px;background:#fff;color:#111;font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif;font-size:14px}img{max-width:100%;height:auto}a{color:#2563eb}</style></head><body>${html}</body></html>`;
 }

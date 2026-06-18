@@ -1,5 +1,3 @@
-/** Shared types & helpers usable from both server and client components. */
-
 export type Category = "claude" | "blancvpn" | "news";
 
 export const CATEGORIES: Category[] = ["claude", "blancvpn", "news"];
@@ -14,11 +12,9 @@ export interface MailMessage {
   fromAddress: string;
   fromName: string;
   subject: string;
-  date: string; // ISO-8601
+  date: string;
   preview: string;
-  /** BlancVPN only. */
   code?: string;
-  /** Claude only. */
   loginUrl?: string;
 }
 

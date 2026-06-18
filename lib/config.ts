@@ -1,19 +1,3 @@
-/**
- * Reads IMAP / mailbox configuration from environment variables.
- *
- * The variable names intentionally match the existing project `.env`:
- *   EMAIL          - the Gmail address (also used as the IMAP login)
- *   EMAIL_PASSWORD - a Gmail *app password* (not the account password)
- *   IMAP           - the IMAP host, e.g. imap.gmail.com
- *
- * Optional overrides:
- *   IMAP_PORT          - defaults to 993 (implicit TLS)
- *   IMAP_MAILBOX       - defaults to "INBOX"
- *   MAIL_LOOKBACK_DAYS - how far back to search, defaults to 30
- *   LOGIN_EMAIL        - the address shown to the user in the instructions,
- *                        defaults to EMAIL (they are normally the same)
- */
-
 export interface ImapConfig {
   host: string;
   port: number;
@@ -40,12 +24,6 @@ export function getImapConfig(): ImapConfig | null {
   };
 }
 
-/** The login email shown in the on-screen instructions. */
 export function getLoginEmail(): string {
   return (process.env.LOGIN_EMAIL || process.env.EMAIL || "").trim();
-}
-
-/** Whether the server has enough configuration to talk to IMAP. */
-export function isImapConfigured(): boolean {
-  return getImapConfig() !== null;
 }

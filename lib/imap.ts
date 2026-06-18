@@ -12,7 +12,6 @@ import type { Category, FullMail, MailMessage } from "./types";
 export { CATEGORIES, isCategory } from "./types";
 export type { Category, FullMail, MailMessage } from "./types";
 
-/** Raised when EMAIL / EMAIL_PASSWORD / IMAP are not all present. */
 export class ImapConfigError extends Error {
   constructor() {
     super(
@@ -23,13 +22,9 @@ export class ImapConfigError extends Error {
 }
 
 interface SearchDef {
-  /** IMAP FROM filter (substring match against the From header). */
   from: string;
-  /** IMAP SUBJECT filter (substring match), if any. */
   subject?: string;
-  /** Whether we must download + parse the body for the list view. */
   needsBody: boolean;
-  /** Confirms a message really belongs to this category. */
   matches: (fromAddress: string) => boolean;
 }
 
@@ -62,12 +57,10 @@ function newClient(): ImapFlow {
     secure: cfg.port === 993,
     auth: { user: cfg.user, pass: cfg.pass },
     logger: false,
-    // Keep connections short-lived; this runs in serverless functions.
     socketTimeout: 20_000,
   });
 }
 
-/** Fetch the latest messages for a category, newest first. */
 export async function fetchMessages(
   category: Category,
   limit = 20,
@@ -107,7 +100,6 @@ export async function fetchMessages(
   }
 }
 
-/** Fetch the full (HTML) body of a single message, verifying its category. */
 export async function fetchMessageBody(
   category: Category,
   uid: number,
@@ -128,7 +120,6 @@ export async function fetchMessageBody(
     if (!msg || !msg.source) return null;
 
     const fromAddress = msg.envelope?.from?.[0]?.address ?? "";
-    // Defensive: never let a guessed UID return an unrelated inbox email.
     if (!def.matches(fromAddress)) return null;
 
     const parsed = await simpleParser(msg.source);

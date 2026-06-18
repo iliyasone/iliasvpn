@@ -6,7 +6,6 @@ import {
 } from "@/lib/imap";
 import { getLoginEmail } from "@/lib/config";
 
-// imapflow needs a real Node runtime (TCP + TLS sockets), never the Edge one.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
