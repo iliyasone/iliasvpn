@@ -5,6 +5,7 @@ import type { FetchStatus } from "./useMessages";
 import type { MailMessage } from "@/lib/types";
 import { RelativeTime } from "./RelativeTime";
 import { EmailViewer } from "./EmailViewer";
+import { loginClientLabel } from "@/lib/extract";
 
 export function EmailList({
   messages,
@@ -47,6 +48,11 @@ function Row({ message }: { message: MailMessage }) {
         onClick={() => setOpen((v) => !v)}
       >
         {message.category === "news" && <span className="row-tag">Новости</span>}
+        {message.loginClient && (
+          <span className="row-tag row-tag-client">
+            {loginClientLabel(message.loginClient)}
+          </span>
+        )}
         <span className="row-subject">{message.subject || "(без темы)"}</span>
         <span className="row-date">
           <RelativeTime iso={message.date} />

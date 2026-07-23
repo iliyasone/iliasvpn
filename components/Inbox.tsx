@@ -5,6 +5,7 @@ import { CopyButton } from "./CopyButton";
 import { RelativeTime } from "./RelativeTime";
 import { EmailList } from "./EmailList";
 import type { Category, MailMessage } from "@/lib/types";
+import { loginClientLabel } from "@/lib/extract";
 
 const RECENT_MS = 10 * 60 * 1000;
 
@@ -77,7 +78,14 @@ function LatestLink({
 }) {
   return (
     <div className={`latest latest-${accent}`}>
-      <p className="latest-label">Безопасная ссылка для входа</p>
+      <p className="latest-label">
+        Безопасная ссылка для входа
+        {message.loginClient && (
+          <span className="client-badge">
+            {loginClientLabel(message.loginClient)}
+          </span>
+        )}
+      </p>
       <a
         className="btn btn-dark"
         href={message.loginUrl}

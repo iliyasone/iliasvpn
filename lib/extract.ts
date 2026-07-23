@@ -18,7 +18,7 @@ export function extractClaudeLoginUrl(
   let m: RegExpExecArray | null;
   while ((m = hrefRe.exec(html))) candidates.push(decodeEntities(m[1]));
 
-  const textRe = /https?:\/\/[^\s<>"')]+/gi;
+  const textRe = /https?:\/\/[^\s<>"'\])]+/gi;
   while ((m = textRe.exec(text))) candidates.push(m[0]);
 
   const cleaned = candidates
@@ -33,6 +33,25 @@ export function extractClaudeLoginUrl(
     /(magic|login|verify|sign[-_]?in|confirm|claude\.ai)/i.test(u),
   );
   return preferred ?? cleaned[0];
+}
+
+// The magic link carries the requesting client as a query param, e.g.
+// https://claude.ai/magic-link?client=desktop_app#... — absent for web logins.
+export function extractLoginClient(loginUrl: string | undefined): string | undefined {
+  if (!loginUrl) return undefined;
+  try {
+    return new URL(loginUrl).searchParams.get("client") ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+const CLIENT_LABELS: Record<string, string> = {
+  desktop_app: "Claude Code",
+};
+
+export function loginClientLabel(client: string): string {
+  return CLIENT_LABELS[client] ?? client.replace(/_/g, " ");
 }
 
 function decodeEntities(s: string): string {

@@ -16,6 +16,7 @@ export interface MailMessage {
   preview: string;
   code?: string;
   loginUrl?: string;
+  loginClient?: string;
 }
 
 export interface FullMail {

@@ -433,6 +433,21 @@ code {
   margin-right: 8px;
 }
 
+.row-tag-client,
+.client-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--claude);
+  border: 1px solid var(--claude);
+  border-radius: 5px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+.client-badge {
+  margin-left: 8px;
+}
+
 .row-date {
   font-size: 13px;
   color: var(--faint);
