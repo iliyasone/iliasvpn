@@ -62,6 +62,16 @@ cp .env.example .env
 | `IMAP_MAILBOX` | – | Defaults to `INBOX`. |
 | `MAIL_LOOKBACK_DAYS` | – | How far back to search. Defaults to `30`. |
 | `LOGIN_EMAIL` | – | Address shown in instructions. Defaults to `EMAIL`. |
+| `TELEGRAM_BOT_TOKEN` | – | Bot token from [@BotFather](https://t.me/BotFather) for visitor notifications. |
+| `TELEGRAM_CHAT_ID` | – | Your Telegram chat id (ask [@userinfobot](https://t.me/userinfobot)). |
+
+### Visitor notifications
+
+When both `TELEGRAM_*` vars are set, the `/claude` and `/blancvpn` pages ask
+first-time visitors for their Telegram handle (stored in `localStorage`) and
+the bot messages you whenever someone opens a page — at most once per
+10 minutes per page per browser. Without the vars the popup still appears but
+nothing is sent.
 
 ### Getting a Gmail App Password
 

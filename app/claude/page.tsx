@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { EmailChip } from "@/components/EmailChip";
 import { Inbox } from "@/components/Inbox";
+import { VisitorGate } from "@/components/VisitorGate";
 import { getLoginEmail } from "@/lib/config";
 
 export default function ClaudePage() {
@@ -8,6 +9,7 @@ export default function ClaudePage() {
 
   return (
     <div className="container">
+      <VisitorGate page="claude" />
       <div className="topbar">
         <Link href="/" className="back">
           ← Назад

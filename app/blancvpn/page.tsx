@@ -3,6 +3,7 @@ import { InstallButtons } from "@/components/InstallButtons";
 import { EmailChip } from "@/components/EmailChip";
 import { Collapsible } from "@/components/Collapsible";
 import { Inbox } from "@/components/Inbox";
+import { VisitorGate } from "@/components/VisitorGate";
 import { getLoginEmail } from "@/lib/config";
 
 export default function BlancVpnPage() {
@@ -10,6 +11,7 @@ export default function BlancVpnPage() {
 
   return (
     <div className="container">
+      <VisitorGate page="blancvpn" />
       <div className="topbar">
         <Link href="/" className="back">
           ← Назад
