@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { isTokenShaped, readTokens } from "@/lib/access";
+import { isTokenShaped } from "@/lib/access";
 import {
   AccessStoreError,
   createInvite,
+  readTokensFresh,
   deleteInvite,
   restoreInvite,
   revokeInvite,
@@ -26,10 +27,14 @@ function failed(err: unknown) {
 
 export async function GET() {
   if (!(await isAdmin())) return denied();
-  return NextResponse.json(
-    { tokens: await readTokens() },
-    { headers: { "Cache-Control": "no-store" } },
-  );
+  try {
+    return NextResponse.json(
+      { tokens: await readTokensFresh() },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  } catch (err) {
+    return failed(err);
+  }
 }
 
 export async function POST(request: Request) {

@@ -20,11 +20,37 @@ function writeConfig() {
   return { apiToken, id, teamId };
 }
 
+function apiUrl(path: string, teamId?: string): URL {
+  const url = new URL(`https://api.vercel.com${path}`);
+  if (teamId) url.searchParams.set("teamId", teamId);
+  return url;
+}
+
+/**
+ * Strongly consistent read through the REST API. The edge replica used by
+ * `readTokens()` lags writes by a few seconds, which is fine for access
+ * checks but would make read-modify-write in the admin clobber itself.
+ * Falls back to the edge read when the API token is missing.
+ */
+export async function readTokensFresh(): Promise<AccessTokens> {
+  const apiToken = process.env.VERCEL_API_TOKEN?.trim();
+  const id = process.env.EDGE_CONFIG_ID?.trim();
+  if (!apiToken || !id) return readTokens();
+  const res = await fetch(apiUrl(`/v1/edge-config/${id}/item/tokens`, process.env.VERCEL_TEAM_ID?.trim()), {
+    headers: { Authorization: `Bearer ${apiToken}` },
+    cache: "no-store",
+  });
+  if (res.status === 404) return {};
+  if (!res.ok) {
+    throw new AccessStoreError(`Edge Config read failed: ${res.status} ${await res.text().catch(() => "")}`);
+  }
+  const body = (await res.json()) as { value?: AccessTokens };
+  return body.value && typeof body.value === "object" ? body.value : {};
+}
+
 async function writeTokens(tokens: AccessTokens): Promise<void> {
   const { apiToken, id, teamId } = writeConfig();
-  const url = new URL(`https://api.vercel.com/v1/edge-config/${id}/items`);
-  if (teamId) url.searchParams.set("teamId", teamId);
-  const res = await fetch(url, {
+  const res = await fetch(apiUrl(`/v1/edge-config/${id}/items`, teamId), {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${apiToken}`,
@@ -45,7 +71,7 @@ export function generateToken(): string {
 }
 
 export async function createInvite(name: string): Promise<{ token: string; entry: AccessEntry }> {
-  const tokens = await readTokens();
+  const tokens = await readTokensFresh();
   const token = generateToken();
   const entry: AccessEntry = { name, createdAt: new Date().toISOString() };
   await writeTokens({ ...tokens, [token]: entry });
@@ -53,7 +79,7 @@ export async function createInvite(name: string): Promise<{ token: string; entry
 }
 
 export async function revokeInvite(token: string): Promise<boolean> {
-  const tokens = await readTokens();
+  const tokens = await readTokensFresh();
   const entry = tokens[token];
   if (!entry) return false;
   await writeTokens({
@@ -64,7 +90,7 @@ export async function revokeInvite(token: string): Promise<boolean> {
 }
 
 export async function restoreInvite(token: string): Promise<boolean> {
-  const tokens = await readTokens();
+  const tokens = await readTokensFresh();
   const entry = tokens[token];
   if (!entry) return false;
   const { revokedAt: _drop, ...rest } = entry;
@@ -73,7 +99,7 @@ export async function restoreInvite(token: string): Promise<boolean> {
 }
 
 export async function deleteInvite(token: string): Promise<boolean> {
-  const tokens = await readTokens();
+  const tokens = await readTokensFresh();
   if (!(token in tokens)) return false;
   const { [token]: _drop, ...rest } = tokens;
   await writeTokens(rest);
@@ -83,7 +109,7 @@ export async function deleteInvite(token: string): Promise<boolean> {
 /** Best-effort: records when/where a token was last used. Never throws. */
 export async function touchInvite(token: string, from: string): Promise<AccessEntry | null> {
   try {
-    const tokens = await readTokens();
+    const tokens = await readTokensFresh();
     const entry = tokens[token];
     if (!entry) return null;
     const now = new Date().toISOString();

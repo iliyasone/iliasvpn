@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AdminPanel } from "@/components/AdminPanel";
-import { readTokens } from "@/lib/access";
+import { readTokensFresh } from "@/lib/access-store";
 import { isAdmin } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +24,7 @@ export default async function AdminPage({
 
       {admin ? (
         <AdminPanel
-          initialTokens={await readTokens()}
+          initialTokens={await readTokensFresh().catch(() => ({}))}
           writable={Boolean(process.env.VERCEL_API_TOKEN && process.env.EDGE_CONFIG_ID)}
         />
       ) : (
