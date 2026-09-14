@@ -3,15 +3,18 @@ import { InstallButtons } from "@/components/InstallButtons";
 import { EmailChip } from "@/components/EmailChip";
 import { Collapsible } from "@/components/Collapsible";
 import { Inbox } from "@/components/Inbox";
-import { VisitorGate } from "@/components/VisitorGate";
+import { Locked } from "@/components/Locked";
+import { currentInvite } from "@/lib/session";
 import { getLoginEmail } from "@/lib/config";
 
-export default function BlancVpnPage() {
+export default async function BlancVpnPage() {
+  if (!(await currentInvite())) {
+    return <Locked logo="/logos/blancvpn.png" alt="BlancVPN" />;
+  }
   const email = getLoginEmail();
 
   return (
     <div className="container">
-      <VisitorGate page="blancvpn" />
       <div className="topbar">
         <Link href="/" className="back">
           ← Назад

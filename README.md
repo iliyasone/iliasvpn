@@ -62,16 +62,41 @@ cp .env.example .env
 | `IMAP_MAILBOX` | – | Defaults to `INBOX`. |
 | `MAIL_LOOKBACK_DAYS` | – | How far back to search. Defaults to `30`. |
 | `LOGIN_EMAIL` | – | Address shown in instructions. Defaults to `EMAIL`. |
+| `EDGE_CONFIG` | ✅ | Read connection string of the Edge Config holding invites. Without it everything is locked. |
+| `EDGE_CONFIG_ID` | – | Edge Config id; needed together with `VERCEL_API_TOKEN` to create/revoke invites from `/admin`. |
+| `VERCEL_API_TOKEN` | – | Vercel account token used to write to the Edge Config. |
+| `VERCEL_TEAM_ID` | – | Team id, if the Edge Config belongs to a team. |
+| `ADMIN_TOKEN` | ✅ | Password for `/admin`. |
 | `TELEGRAM_BOT_TOKEN` | – | Bot token from [@BotFather](https://t.me/BotFather) for visitor notifications. |
 | `TELEGRAM_CHAT_ID` | – | Your Telegram chat id (ask [@userinfobot](https://t.me/userinfobot)). |
 
+### Access control
+
+Access is by **personal invite link**: `https://<host>/?k=<token>`. Opening it
+stores the token in an httpOnly cookie for a year and redirects to the page
+without the token in the URL. `middleware.ts` checks the cookie on
+`/api/messages` and `/api/message` (401 otherwise), and the `/claude` and
+`/blancvpn` pages render a "write to Ilias in Telegram" screen instead of the
+flow when the cookie is missing or the invite was revoked. The landing page
+stays public.
+
+Invites live in a Vercel **Edge Config** under the key `tokens`:
+
+```json
+{ "tokens": { "<token>": { "name": "Маша", "createdAt": "…", "lastSeenAt": "…" } } }
+```
+
+`/admin` (password = `ADMIN_TOKEN`) lists everyone, creates a link for a name,
+and revokes / restores / deletes entries. Writes go through the Vercel REST API,
+so `VERCEL_API_TOKEN` + `EDGE_CONFIG_ID` must be set; reads only need
+`EDGE_CONFIG`.
+
 ### Visitor notifications
 
-When both `TELEGRAM_*` vars are set, the `/claude` and `/blancvpn` pages ask
-first-time visitors for their Telegram handle (stored in `localStorage`) and
-the bot messages you whenever someone opens a page — at most once per
-10 minutes per page per browser. Without the vars the popup still appears but
-nothing is sent.
+When both `TELEGRAM_*` vars are set, the bot messages you whenever an invited
+person opens `/claude` or `/blancvpn` — name from the invite, IP and city from
+Vercel headers — at most once per 10 minutes per page per browser (throttled by
+an httpOnly cookie set on the server). The first use of an invite is marked 🆕.
 
 ### Getting a Gmail App Password
 
@@ -122,9 +147,15 @@ app/
   page.tsx              Landing — two logo cards
   blancvpn/page.tsx     BlancVPN: install + login by code + emails
   claude/page.tsx       Claude.ai: login by secure link + emails
-  api/messages/route.ts List endpoint (per category)
+  admin/page.tsx        Invite management (behind ADMIN_TOKEN)
+  api/messages/route.ts List endpoint (per category) + visit notification
   api/message/route.ts  Single full-email endpoint
+  api/admin/*           Admin login + invite CRUD
+middleware.ts           Invite-link cookie + API access checks
 lib/
+  access.ts             Invite lookup (Edge Config, edge-safe)
+  access-store.ts       Invite writes via Vercel API (server-only)
+  visit.ts              Telegram visit notifications
   imap.ts               IMAP connect / search / parse (server-only)
   extract.ts            Pull code / login URL out of an email
   config.ts             Env-var reading
@@ -140,9 +171,9 @@ public/logos/           BlancVPN and Claude logos
 
 ## Notes & limitations
 
-- Built for **one mailbox** (a personal helper). There is no auth on the web
-  app itself — deploy it somewhere private, or add access control before
-  exposing it publicly, since anyone who can open the page can see codes.
+- Built for **one mailbox** (a personal helper). Anyone holding a valid invite
+  link sees the codes, so treat links as secrets and revoke leaked ones in
+  `/admin`.
 - Codes/links are matched by sender + subject; if those email templates change,
   update the rules in `lib/imap.ts` / `lib/extract.ts`.
 - Only `INBOX` is searched by default (archived mail is skipped).

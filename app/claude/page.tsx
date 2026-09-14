@@ -1,15 +1,18 @@
 import Link from "next/link";
 import { EmailChip } from "@/components/EmailChip";
 import { Inbox } from "@/components/Inbox";
-import { VisitorGate } from "@/components/VisitorGate";
+import { Locked } from "@/components/Locked";
+import { currentInvite } from "@/lib/session";
 import { getLoginEmail } from "@/lib/config";
 
-export default function ClaudePage() {
+export default async function ClaudePage() {
+  if (!(await currentInvite())) {
+    return <Locked logo="/logos/claude.png" alt="Claude" />;
+  }
   const email = getLoginEmail();
 
   return (
     <div className="container">
-      <VisitorGate page="claude" />
       <div className="topbar">
         <Link href="/" className="back">
           ← Назад
