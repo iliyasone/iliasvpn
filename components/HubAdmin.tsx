@@ -9,6 +9,7 @@ import {
   StatRow,
   ago,
   money,
+  pct,
   when,
   type Limit,
   type Totals,
@@ -27,11 +28,13 @@ interface Key {
   total: Totals;
   daily: { date: string; cost: number }[];
   models: { model: string; cost: number; requests: number }[];
+  week_limit: number;
 }
 
 interface Overview {
   keys: Key[];
   limits: Limit[];
+  week_baseline: number | null;
   week: Totals;
   today: Totals;
   daily: { date: string; cost: number }[];
@@ -118,6 +121,7 @@ export function HubAdmin({ hub }: { hub: string }) {
       <section className="section">
         <h2 className="section-title">Аккаунт</h2>
         <LimitBars limits={data.limits} />
+        <LimitSplit data={data} />
         <StatRow today={data.today} week={data.week} />
         <DailyChart daily={data.daily} />
         <p className="step-note">
@@ -179,6 +183,28 @@ export function HubAdmin({ hub }: { hub: string }) {
   );
 }
 
+/** How this week's limit splits: per key through the hub, and the rest (before the hub or around it). */
+function LimitSplit({ data }: { data: Overview }) {
+  const total = data.limits.find((l) => l.window === "7d")?.utilization;
+  if (total === undefined) return null;
+  const keys = data.keys.filter((k) => k.week_limit > 0).sort((a, b) => b.week_limit - a.week_limit);
+  const viaHub = keys.reduce((s, k) => s + k.week_limit, 0);
+  return (
+    <ul className="split">
+      {keys.map((k) => (
+        <li key={k.id}>
+          <span>{k.name}</span>
+          <span>≈{pct(k.week_limit)}</span>
+        </li>
+      ))}
+      <li className="split-rest">
+        <span>{data.week_baseline === null ? "Без хаба" : "До хаба и мимо него"}</span>
+        <span>{pct(Math.max(0, total - viaHub))}</span>
+      </li>
+    </ul>
+  );
+}
+
 function KeyRow({
   hub,
   k,
@@ -202,8 +228,8 @@ function KeyRow({
           <span className="admin-meta">{k.revoked_at ? `отозван ${when(k.revoked_at)}` : ago(k.total.last_used_at)}</span>
         </span>
         <span className="hub-row-cost">
-          <span>{money(k.week.cost)}</span>
-          <span className="admin-meta">неделя</span>
+          <span>≈{pct(k.week_limit)}</span>
+          <span className="admin-meta">{money(k.week.cost)} за неделю</span>
         </span>
       </button>
       {open && (

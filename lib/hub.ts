@@ -24,6 +24,8 @@ export interface HubKey {
   total: HubTotals;
   daily: { date: string; cost: number }[];
   models: { model: string; cost: number; requests: number }[];
+  /** Estimated part of the account weekly limit this key used this week (0..1). */
+  week_limit: number;
 }
 
 export interface HubLimit {

@@ -20,6 +20,33 @@ export function money(n: number): string {
   return `$${Math.round(n).toLocaleString("en-US")}`;
 }
 
+/** Share of the weekly limit, e.g. 0.023 → "2.3%". */
+export function pct(f: number): string {
+  const v = f * 100;
+  if (v === 0) return "0%";
+  if (v < 0.1) return "<0.1%";
+  return `${v < 10 ? v.toFixed(1) : Math.round(v)}%`;
+}
+
+/** This key's estimated share of the weekly limit, shown inside the account total. */
+export function KeyLimit({ share, limits }: { share: number; limits: Limit[] }) {
+  const total = limits.find((l) => l.window === "7d")?.utilization ?? 0;
+  return (
+    <div className="key-limit">
+      <div className="limit-head">
+        <span>Этот ключ за неделю</span>
+        <span className="limit-pct">≈{pct(share)}</span>
+      </div>
+      <div className="limit-track">
+        <div className="limit-fill limit-fill-muted" style={{ width: `${Math.min(100, total * 100)}%` }}>
+          <div className="limit-fill" style={{ width: total > 0 ? `${Math.min(100, (share / total) * 100)}%` : 0 }} />
+        </div>
+      </div>
+      <p className="limit-note">Доля недельного лимита аккаунта — оценка по запросам через хаб</p>
+    </div>
+  );
+}
+
 export function when(ts: number | null | undefined): string {
   if (!ts) return "—";
   return new Date(ts * 1000).toLocaleString("ru-RU", {

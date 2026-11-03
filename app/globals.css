@@ -989,3 +989,41 @@ code {
   padding: 2px 9px;
   font-size: 12px;
 }
+
+.key-limit {
+  margin: -4px 0 22px;
+}
+
+.limit-fill-muted {
+  background: #f0d9cf;
+  overflow: hidden;
+}
+
+.split {
+  list-style: none;
+  margin: -8px 0 22px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+}
+
+.split li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.split li span:last-child {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.split-rest {
+  color: var(--muted);
+}
+
+.split-rest span:last-child {
+  font-weight: 400 !important;
+}
