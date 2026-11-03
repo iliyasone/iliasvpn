@@ -65,7 +65,7 @@ export async function middleware(request: NextRequest) {
 
   if (PROTECTED_API.some((p) => pathname.startsWith(p))) {
     const invite = await resolveToken(request.cookies.get(ACCESS_COOKIE)?.value);
-    if (!invite) {
+    if (!invite && !isAdminCookie(request.cookies.get("admin")?.value)) {
       return NextResponse.json(
         { error: "Нет доступа.", code: "NO_ACCESS" },
         { status: 401 },

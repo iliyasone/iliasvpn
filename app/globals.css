@@ -539,6 +539,7 @@ code {
 }
 
 .admin-row-main {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -889,4 +890,102 @@ code {
   gap: 2px;
   padding: 20px;
   font-weight: 600;
+}
+
+/* Who is signed in */
+
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--claude-tint);
+  color: var(--claude);
+  font-weight: 600;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-admin {
+  font-size: 14px;
+  padding: 6px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+}
+
+.user-admin:hover {
+  border-color: var(--text);
+}
+
+.user-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+}
+
+.user-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 10;
+  min-width: 180px;
+  padding: 14px 16px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.user-menu form {
+  margin-top: 10px;
+}
+
+.user-name {
+  margin: 0;
+  font-weight: 600;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.chips-row {
+  margin-top: 2px;
+}
+
+.chip {
+  padding: 5px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.chip-on {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.chip-small {
+  padding: 2px 9px;
+  font-size: 12px;
 }

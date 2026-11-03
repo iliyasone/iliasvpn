@@ -1,24 +1,20 @@
-import Link from "next/link";
 import { EmailChip } from "@/components/EmailChip";
 import { Inbox } from "@/components/Inbox";
 import { Locked } from "@/components/Locked";
-import { currentInvite } from "@/lib/session";
+import { currentViewer, viewerCan } from "@/lib/session";
+import { Topbar } from "@/components/Topbar";
 import { getLoginEmail } from "@/lib/config";
 
 export default async function ClaudePage() {
-  if (!(await currentInvite())) {
-    return <Locked logo="/logos/claude.png" alt="Claude" />;
+  const viewer = await currentViewer();
+  if (!viewerCan(viewer, "claude")) {
+    return <Locked logo="/logos/claude.png" alt="Claude" signedIn={Boolean(viewer)} />;
   }
   const email = getLoginEmail();
 
   return (
     <div className="container">
-      <div className="topbar">
-        <Link href="/" className="back">
-          ← Назад
-        </Link>
-        <span className="wordmark">iliasvpn</span>
-      </div>
+      <Topbar back="/" />
 
       <div className="flow-head">
         <img src="/logos/claude.png" alt="Claude" />

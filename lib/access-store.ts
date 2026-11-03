@@ -1,6 +1,6 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
-import { readTokens, type AccessEntry, type AccessTokens } from "./access";
+import { readTokens, type AccessEntry, type AccessTokens, type Service } from "./access";
 
 /**
  * Writes go through the Vercel REST API — Edge Config itself is read-only from
@@ -70,12 +70,25 @@ export function generateToken(): string {
   return randomBytes(12).toString("base64url");
 }
 
-export async function createInvite(name: string): Promise<{ token: string; entry: AccessEntry }> {
+export async function createInvite(
+  name: string,
+  telegram: string | undefined,
+  access: Record<Service, boolean>,
+): Promise<{ token: string; entry: AccessEntry }> {
   const tokens = await readTokensFresh();
   const token = generateToken();
-  const entry: AccessEntry = { name, createdAt: new Date().toISOString() };
+  const entry: AccessEntry = { name, createdAt: new Date().toISOString(), access };
+  if (telegram) entry.telegram = telegram;
   await writeTokens({ ...tokens, [token]: entry });
   return { token, entry };
+}
+
+export async function setAccess(token: string, service: Service, allowed: boolean): Promise<boolean> {
+  const tokens = await readTokensFresh();
+  const entry = tokens[token];
+  if (!entry) return false;
+  await writeTokens({ ...tokens, [token]: { ...entry, access: { ...entry.access, [service]: allowed } } });
+  return true;
 }
 
 export async function revokeInvite(token: string): Promise<boolean> {

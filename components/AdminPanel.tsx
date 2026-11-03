@@ -2,7 +2,11 @@
 
 import { useState, type FormEvent } from "react";
 import type { AccessEntry, AccessTokens } from "@/lib/access";
+import { SERVICES, canUse, type Service } from "@/lib/services";
+import { Avatar } from "./Avatar";
 import { CopyButton } from "./CopyButton";
+
+const SERVICE_NAMES: Record<Service, string> = { blancvpn: "BlancVPN", claude: "Claude" };
 
 function inviteUrl(token: string): string {
   const origin = typeof window === "undefined" ? "" : window.location.origin;
@@ -31,6 +35,7 @@ export function AdminPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<string | null>(null);
+  const [access, setAccessDraft] = useState<Record<Service, boolean>>({ blancvpn: true, claude: false });
 
   async function refresh() {
     const res = await fetch("/api/admin/tokens", { cache: "no-store" });
@@ -60,7 +65,7 @@ export function AdminPanel({
     e.preventDefault();
     const clean = name.trim();
     if (!clean) return;
-    const res = await call({ method: "POST", body: JSON.stringify({ name: clean }) });
+    const res = await call({ method: "POST", body: JSON.stringify({ name: clean, access }) });
     if (!res) return;
     const { token } = (await res.json()) as { token: string };
     setName("");
@@ -71,6 +76,11 @@ export function AdminPanel({
   async function act(token: string, action: "revoke" | "restore" | "delete") {
     if (action === "delete" && !confirm("Удалить запись совсем?")) return;
     const res = await call({ method: "PATCH", body: JSON.stringify({ token, action }) });
+    if (res) await refresh();
+  }
+
+  async function toggle(token: string, service: Service, allowed: boolean) {
+    const res = await call({ method: "PATCH", body: JSON.stringify({ token, action: "access", service, allowed }) });
     if (res) await refresh();
   }
 
@@ -91,7 +101,7 @@ export function AdminPanel({
           <input
             className="gate-input"
             type="text"
-            placeholder="Имя (кому даёшь ссылку)"
+            placeholder="@ник в Telegram или имя"
             value={name}
             onChange={(e) => setName(e.target.value)}
             disabled={busy || !writable}
@@ -104,6 +114,20 @@ export function AdminPanel({
             Создать ссылку
           </button>
         </form>
+        <div className="chips">
+          {SERVICES.map((s) => (
+            <button
+              key={s}
+              type="button"
+              className={`chip${access[s] ? " chip-on" : ""}`}
+              onClick={() => setAccessDraft({ ...access, [s]: !access[s] })}
+              disabled={busy || !writable}
+            >
+              {access[s] ? "✓ " : ""}
+              {SERVICE_NAMES[s]}
+            </button>
+          ))}
+        </div>
         {error && <p className="admin-error">{error}</p>}
         {created && tokens[created] && (
           <div className="latest latest-claude">
@@ -127,6 +151,7 @@ export function AdminPanel({
               entry={entry}
               busy={busy || !writable}
               onAct={act}
+              onToggle={toggle}
             />
           ))}
         </ul>
@@ -140,18 +165,40 @@ function AdminRow({
   entry,
   busy,
   onAct,
+  onToggle,
 }: {
   token: string;
   entry: AccessEntry;
   busy: boolean;
   onAct: (token: string, action: "revoke" | "restore" | "delete") => void;
+  onToggle: (token: string, service: Service, allowed: boolean) => void;
 }) {
   const revoked = Boolean(entry.revokedAt);
   return (
     <li className={`admin-row${revoked ? " admin-row-revoked" : ""}`}>
+      <Avatar name={entry.name} telegram={entry.telegram} size={36} />
       <div className="admin-row-main">
         <span className="admin-name">{entry.name}</span>
         {revoked && <span className="admin-badge">отозван</span>}
+        {entry.telegram && <span className="admin-meta">@{entry.telegram}</span>}
+        <span className="chips chips-row">
+          {SERVICES.map((s) => {
+            const on = canUse(entry, s);
+            return (
+              <button
+                key={s}
+                type="button"
+                className={`chip chip-small${on ? " chip-on" : ""}`}
+                disabled={busy}
+                onClick={() => onToggle(token, s, !on)}
+                title={on ? "Нажмите, чтобы закрыть доступ" : "Нажмите, чтобы открыть доступ"}
+              >
+                {on ? "✓ " : ""}
+                {SERVICE_NAMES[s]}
+              </button>
+            );
+          })}
+        </span>
         <span className="admin-meta">
           создан {fmt(entry.createdAt)} · был {fmt(entry.lastSeenAt)}
           {entry.lastSeenFrom ? ` · ${entry.lastSeenFrom}` : ""}

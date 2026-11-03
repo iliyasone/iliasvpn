@@ -1,23 +1,18 @@
-import Link from "next/link";
+import { Topbar } from "./Topbar";
 
 const TG_URL = "https://t.me/iliyasone";
 
-export function Locked({ logo, alt }: { logo: string; alt: string }) {
+export function Locked({ logo, alt, signedIn = false }: { logo: string; alt: string; signedIn?: boolean }) {
   return (
     <div className="container">
-      <div className="topbar">
-        <Link href="/" className="back">
-          ← Назад
-        </Link>
-        <span className="wordmark">iliasvpn</span>
-      </div>
+      <Topbar back="/" />
 
       <div className="flow-head">
         <img src={logo} alt={alt} />
       </div>
 
       <section className="section locked">
-        <p className="locked-title">Доступ по приглашению</p>
+        <p className="locked-title">{signedIn ? "Этот раздел вам не открыт" : "Доступ по приглашению"}</p>
         <p className="locked-note">
           Напишите Ильясу в Telegram, чтобы получить доступ.
         </p>
