@@ -67,6 +67,8 @@ cp .env.example .env
 | `VERCEL_API_TOKEN` | – | Vercel account token used to write to the Edge Config. |
 | `VERCEL_TEAM_ID` | – | Team id, if the Edge Config belongs to a team. |
 | `ADMIN_TOKEN` | ✅ | Password for `/admin`. |
+| `HUB_URL` | – | Claude Code hub address; enables `/code` and the Claude Code tab in `/admin`. |
+| `HUB_ADMIN_KEY` | – | Admin key of the Claude Code hub. |
 | `TELEGRAM_BOT_TOKEN` | – | Bot token from [@BotFather](https://t.me/BotFather) for visitor notifications. |
 | `TELEGRAM_CHAT_ID` | – | Your Telegram chat id (ask [@userinfobot](https://t.me/userinfobot)). |
 
@@ -90,6 +92,14 @@ Invites live in a Vercel **Edge Config** under the key `tokens`:
 and revokes / restores / deletes entries. Writes go through the Vercel REST API,
 so `VERCEL_API_TOKEN` + `EDGE_CONFIG_ID` must be set; reads only need
 `EDGE_CONFIG`.
+
+### Claude Code keys
+
+`/admin` has a **Claude Code** tab that manages keys on a self-hosted Claude Code
+hub (CLIProxyAPI plus a small service that issues keys and records usage). Each
+key gets a page at `/code?key=<key>` with setup instructions, the account's
+weekly limit, and spend for that key. Set `HUB_URL` (the hub's public address)
+and `HUB_ADMIN_KEY` (the hub's admin key); the admin key stays on the server.
 
 ### Visitor notifications
 

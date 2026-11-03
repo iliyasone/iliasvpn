@@ -14,6 +14,10 @@ export default function HomePage() {
         <Link href="/claude" className="home-card home-card-claude">
           <img src="/logos/claude.png" alt="Claude" />
         </Link>
+        <Link href="/code" className="home-card home-card-code">
+          <span>Claude Code</span>
+          <span className="admin-meta">ключ и расход</span>
+        </Link>
       </div>
     </div>
   );
