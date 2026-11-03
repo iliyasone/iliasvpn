@@ -22,8 +22,9 @@ export default async function HomePage() {
           </Link>
         )}
         {show("gemini") && (
-          <Link href="/gemini" className="home-card home-card-gemini">
-            <img src="/logos/gemini.svg" alt="Gemini" />
+          <Link href="/gemini" className="home-card home-card-ciao">
+            <img src="/logos/ciao.svg" alt="" />
+            <span>Ciao</span>
           </Link>
         )}
       </div>

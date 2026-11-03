@@ -118,8 +118,19 @@ code {
   width: 116px;
 }
 
-.home-card-gemini img {
-  width: 150px;
+.home-card-ciao {
+  gap: 10px;
+}
+
+.home-card-ciao img {
+  width: 38px;
+}
+
+.home-card-ciao span {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #1a1a1a;
 }
 
 .flow-head {
