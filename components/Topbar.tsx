@@ -2,17 +2,9 @@ import Link from "next/link";
 import { currentViewer } from "@/lib/session";
 import { UserMenu } from "./UserMenu";
 
-/** Page header: back link or wordmark on the left, who is signed in on the right (or `as`, e.g. a Claude Code key). */
-export async function Topbar({
-  back,
-  title = "iliasvpn",
-  as,
-}: {
-  back?: string;
-  title?: string;
-  as?: { name: string; telegram?: string };
-}) {
-  const viewer = as ? { ...as, kind: "key" as const } : await currentViewer();
+/** Page header: back link or wordmark on the left, the signed-in key's avatar on the right. */
+export async function Topbar({ back, title = "iliasvpn" }: { back?: string; title?: string }) {
+  const viewer = await currentViewer();
   return (
     <div className="topbar">
       {back ? (
@@ -23,7 +15,7 @@ export async function Topbar({
         <span className="wordmark">{title}</span>
       )}
       {viewer ? (
-        <UserMenu name={viewer.name} telegram={viewer.telegram} admin={viewer.kind === "admin"} />
+        <UserMenu name={viewer.name} telegram={viewer.telegram} color={viewer.color} admin={viewer.admin} />
       ) : (
         back && <span className="wordmark">{title}</span>
       )}

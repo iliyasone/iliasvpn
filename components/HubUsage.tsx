@@ -28,25 +28,6 @@ export function pct(f: number): string {
   return `${v < 10 ? v.toFixed(1) : Math.round(v)}%`;
 }
 
-/** This key's estimated share of the weekly limit, shown inside the account total. */
-export function KeyLimit({ share, limits }: { share: number; limits: Limit[] }) {
-  const total = limits.find((l) => l.window === "7d")?.utilization ?? 0;
-  return (
-    <div className="key-limit">
-      <div className="limit-head">
-        <span>Этот ключ за неделю</span>
-        <span className="limit-pct">≈{pct(share)}</span>
-      </div>
-      <div className="limit-track">
-        <div className="limit-fill limit-fill-muted" style={{ width: `${Math.min(100, total * 100)}%` }}>
-          <div className="limit-fill" style={{ width: total > 0 ? `${Math.min(100, (share / total) * 100)}%` : 0 }} />
-        </div>
-      </div>
-      <p className="limit-note">Доля недельного лимита аккаунта — оценка по запросам через хаб</p>
-    </div>
-  );
-}
-
 export function when(ts: number | null | undefined): string {
   if (!ts) return "—";
   return new Date(ts * 1000).toLocaleString("ru-RU", {
@@ -67,16 +48,65 @@ export function ago(ts: number | null | undefined): string {
   return `${Math.round(s / 86400)} дн назад`;
 }
 
+export interface Segment {
+  label: string;
+  color: string;
+  /** Share of the account's weekly limit, 0..1. */
+  value: number;
+}
+
+const REST_COLOR = "#c9cbd0";
+
+/**
+ * The account's weekly limit as one bar: a colored part per key (estimated from requests
+ * through the hub), the rest of the used part in gray, and what is left.
+ */
+export function WeekBar({ limits, segments, restLabel }: { limits: Limit[]; segments: Segment[]; restLabel: string }) {
+  const week = limits.find((l) => l.window === "7d");
+  if (!week) {
+    return <p className="step-note">Лимиты появятся после первого запроса через хаб.</p>;
+  }
+  const used = Math.min(1, week.utilization);
+  const keyed = [...segments].sort((a, b) => b.value - a.value);
+  const rest = Math.max(0, used - keyed.reduce((sum, s) => sum + s.value, 0));
+  const parts = [...keyed, { label: restLabel, color: REST_COLOR, value: rest }];
+  return (
+    <div className="week">
+      <div className="limit-head">
+        <span>Неделя · весь аккаунт</span>
+        <span className="limit-pct">осталось {Math.round((1 - used) * 100)}%</span>
+      </div>
+      <div className="limit-track week-track">
+        {parts.map((p) => (
+          <div key={p.label} title={`${p.label}: ${pct(p.value)}`} style={{ width: `${p.value * 100}%`, background: p.color }} />
+        ))}
+      </div>
+      <p className="limit-note">
+        Использовано {Math.round(used * 100)}% · сброс {when(week.reset)} МСК
+      </p>
+      <ul className="split">
+        {parts.map((p) => (
+          <li key={p.label}>
+            <span>
+              <i className="dot" style={{ background: p.color }} />
+              {p.label}
+            </span>
+            <span>{pct(p.value)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 const WINDOW_NAMES: Record<string, string> = {
-  "7d": "Недельный лимит",
   "5h": "Лимит на 5 часов",
 };
 
+/** Shorter windows (5 hours), when Anthropic reports them. */
 export function LimitBars({ limits }: { limits: Limit[] }) {
   const shown = limits.filter((l) => WINDOW_NAMES[l.window]);
-  if (shown.length === 0) {
-    return <p className="step-note">Лимиты появятся после первого запроса через хаб.</p>;
-  }
+  if (shown.length === 0) return null;
   return (
     <div className="limits">
       {shown.map((l) => {

@@ -1062,3 +1062,55 @@ code {
   filter: blur(5px);
   user-select: none;
 }
+
+.week {
+  margin-bottom: 22px;
+}
+
+.week-track {
+  display: flex;
+  height: 12px;
+}
+
+.week-track > div {
+  height: 100%;
+}
+
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  margin-right: 8px;
+}
+
+.week .split {
+  margin: 12px 0 0;
+}
+
+.access {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  font-size: 14px;
+  margin: 10px 0;
+}
+
+.access label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.access input[type="color"] {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.locked .admin-login {
+  margin-bottom: 14px;
+}

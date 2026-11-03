@@ -1,40 +1,37 @@
 import "server-only";
-import { cookies } from "next/headers";
-import {
-  ACCESS_COOKIE,
-  ADMIN_COOKIE,
-  canUse,
-  isAdminCookie,
-  resolveToken,
-  type AccessEntry,
-  type Service,
-} from "./access";
+import { cache } from "react";
+import { currentHubKey, type HubMe } from "./hub";
 
-export const ADMIN_TELEGRAM = "iliyasone";
+export type Service = "claude" | "blancvpn";
 
-/** Who is looking at the page: the admin (any service) or an invited person. */
-export type Viewer =
-  | { kind: "admin"; name: string; telegram: string }
-  | { kind: "invite"; name: string; telegram?: string; invite: AccessEntry & { token: string } };
-
-export async function currentViewer(): Promise<Viewer | null> {
-  if (await isAdmin()) return { kind: "admin", name: "Ильяс", telegram: ADMIN_TELEGRAM };
-  const invite = await currentInvite();
-  if (!invite) return null;
-  return { kind: "invite", name: invite.name, telegram: invite.telegram, invite };
+/** Who is looking at the page: the holder of a key (person or agent), with its usage. */
+export interface Viewer {
+  name: string;
+  telegram?: string;
+  color: string;
+  admin: boolean;
+  access: Record<Service, boolean>;
+  me: HubMe;
 }
+
+export const currentViewer = cache(async (): Promise<Viewer | null> => {
+  const me = await currentHubKey();
+  if (!me) return null;
+  const { key } = me;
+  return {
+    name: key.name,
+    telegram: key.telegram ?? undefined,
+    color: key.color,
+    admin: key.admin,
+    access: { claude: key.claude, blancvpn: key.blancvpn },
+    me,
+  };
+});
 
 export function viewerCan(viewer: Viewer | null, service: Service): boolean {
-  if (!viewer) return false;
-  return viewer.kind === "admin" || canUse(viewer.invite, service);
-}
-
-export async function currentInvite() {
-  const jar = await cookies();
-  return resolveToken(jar.get(ACCESS_COOKIE)?.value);
+  return Boolean(viewer && (viewer.admin || viewer.access[service]));
 }
 
 export async function isAdmin(): Promise<boolean> {
-  const jar = await cookies();
-  return isAdminCookie(jar.get(ADMIN_COOKIE)?.value);
+  return Boolean((await currentViewer())?.admin);
 }
