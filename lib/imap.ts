@@ -7,10 +7,7 @@ import {
 import { simpleParser } from "mailparser";
 import { getImapConfig } from "./config";
 import {
-  extractClaudeLoginUrl,
-  extractLoginClient,
   extractLoginCode,
-  snippet,
 } from "./extract";
 import type { Category, FullMail, MailMessage } from "./types";
 
@@ -34,15 +31,6 @@ interface SearchDef {
 }
 
 const SEARCH: Record<Category, SearchDef> = {
-  claude: {
-    from: "mail.anthropic.com",
-    // IMAP SUBJECT is a case-insensitive substring match; this covers both the
-    // old "Secure link to log in to Claude.ai" and the new (since 2026-07)
-    // "Your secure link to Claude.ai is here" subjects.
-    subject: "secure link",
-    needsBody: true,
-    matches: (a) => a.toLowerCase().endsWith("@mail.anthropic.com"),
-  },
   blancvpn: {
     from: "support@blancvpn.com",
     subject: "is your BlancVPN login code",
@@ -170,15 +158,6 @@ async function toListMessage(
 
   if (category === "blancvpn") {
     return { ...base, code: extractLoginCode(subject, text), preview: subject };
-  }
-  if (category === "claude") {
-    const loginUrl = extractClaudeLoginUrl(html, text);
-    return {
-      ...base,
-      loginUrl,
-      loginClient: extractLoginClient(loginUrl),
-      preview: snippet(text) || subject,
-    };
   }
   return { ...base, preview: subject };
 }

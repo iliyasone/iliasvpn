@@ -3,16 +3,16 @@ import { CodeBlock } from "./CodeBlock";
 import { Collapsible } from "./Collapsible";
 import { CopyButton } from "./CopyButton";
 import { Secret } from "./Secret";
-import { DailyChart, KeyLimit, LimitBars, ModelList, StatRow, ago } from "./HubUsage";
+import { DailyChart, LimitBars, ModelList, StatRow, WeekBar, ago } from "./HubUsage";
 import { HUB_URL, type HubMe } from "@/lib/hub";
 import { settingsSnippet, setupCommand, usageCommand } from "@/lib/hub-setup";
 
-/** /claude for a Claude Code key: the account's limits and how to connect a machine (Claude Code CLI or T3 Code). */
+/** /claude for the signed-in key (person or agent): the account's limits, this key's spend, and how to connect. */
 export function AgentPage({ me }: { me: HubMe }) {
   const { key } = me;
   return (
     <div className="container">
-      <Topbar title="iliasvpn · Claude Code" as={{ name: key.name, telegram: key.telegram ?? undefined }} />
+      <Topbar back="/" />
 
       <div className="key-head">
         <h1 className="key-name">{key.name}</h1>
@@ -21,8 +21,12 @@ export function AgentPage({ me }: { me: HubMe }) {
 
       <section className="section">
         <h2 className="section-title">Общие лимиты аккаунта</h2>
+        <WeekBar
+          limits={me.limits}
+          segments={[{ label: `${key.name} — вы`, color: key.color, value: key.week_limit }]}
+          restLabel="Остальные"
+        />
         <LimitBars limits={me.limits} />
-        <KeyLimit share={key.week_limit} limits={me.limits} />
         <StatRow today={key.today} week={key.week} total={key.total} />
         <Collapsible title="Расход ключа по дням и моделям">
           <DailyChart daily={key.daily} />

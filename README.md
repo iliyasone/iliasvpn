@@ -4,12 +4,11 @@ A small, self-hosted web service that surfaces **login codes and login links**
 from a Gmail inbox the instant they arrive — so you never have to dig through
 your mail app to copy a one-time code again.
 
-It watches two specific kinds of email and presents each as its own guided flow:
+It watches BlancVPN email and presents each as its own guided flow:
 
 | Flow | What it shows | Source email |
 | --- | --- | --- |
 | **BlancVPN** | The 6-digit login **code** (plus install + login instructions and a "Новости" feed) | `support@blancvpn.com`, subject `… is your BlancVPN login code` |
-| **Claude.ai** | The **secure login link** | `no-reply-*@mail.anthropic.com`, subject `Secure link to log in to Claude.ai` |
 | **Новости** (News) | BlancVPN announcements | any sender at `blancvpn.org` |
 
 All mail is read **server-side over IMAP** — credentials never reach the
@@ -28,8 +27,8 @@ Browser ──fetch──▶ /api/messages?category=…  ─┐
                                        lib/imap.ts  ──IMAP/TLS──▶  Gmail
 ```
 
-- **`/api/messages?category=claude|blancvpn|news`** — searches the mailbox,
-  extracts the code (BlancVPN) or login URL (Claude), and returns a lightweight
+- **`/api/messages?category=blancvpn|news`** — searches the mailbox,
+  extracts the BlancVPN code and returns a lightweight
   JSON list (no raw HTML).
 - **`/api/message?category=…&uid=…`** — returns the full body of one message on
   demand. The viewer renders it inside a **sandboxed iframe** (no scripts), and
@@ -62,54 +61,34 @@ cp .env.example .env
 | `IMAP_MAILBOX` | – | Defaults to `INBOX`. |
 | `MAIL_LOOKBACK_DAYS` | – | How far back to search. Defaults to `30`. |
 | `LOGIN_EMAIL` | – | Address shown in instructions. Defaults to `EMAIL`. |
-| `EDGE_CONFIG` | ✅ | Read connection string of the Edge Config holding invites. Without it everything is locked. |
-| `EDGE_CONFIG_ID` | – | Edge Config id; needed together with `VERCEL_API_TOKEN` to create/revoke invites from `/admin`. |
-| `VERCEL_API_TOKEN` | – | Vercel account token used to write to the Edge Config. |
-| `VERCEL_TEAM_ID` | – | Team id, if the Edge Config belongs to a team. |
-| `ADMIN_TOKEN` | ✅ | Password for `/admin`. |
-| `HUB_URL` | – | Claude Code hub address; enables `/code` and the Claude Code tab in `/admin`. |
-| `HUB_ADMIN_KEY` | – | Admin key of the Claude Code hub. |
+| `HUB_URL` | ✅ | Claude Code hub address; keys, sign-in and `/claude` live there. |
+| `HUB_ADMIN_KEY` | ✅ | Admin key of the Claude Code hub (server only). |
 | `TELEGRAM_BOT_TOKEN` | – | Bot token from [@BotFather](https://t.me/BotFather) for visitor notifications. |
 | `TELEGRAM_CHAT_ID` | – | Your Telegram chat id (ask [@userinfobot](https://t.me/userinfobot)). |
 
-### Access control
+### Access: one key per person or agent
 
-Access is by **personal invite link**: `https://<host>/?k=<token>`. Opening it
-stores the token in an httpOnly cookie for a year and redirects to the page
-without the token in the URL. `middleware.ts` checks the cookie on
-`/api/messages` and `/api/message` (401 otherwise), and the `/claude` and
-`/blancvpn` pages render a "write to Ilias in Telegram" screen instead of the
-flow when the cookie is missing or the invite was revoked. The landing page
-stays public.
+Everyone signs in with a personal link `https://<host>/<page>?key=<key>`. Keys
+live in the Claude Code hub (claude-hub): name, Telegram username (avatar),
+color, and what the key opens — **Claude** (Claude Code through the hub plus
+the `/claude` page), **BlancVPN**, and admin. Opening a link stores the key in
+an httpOnly cookie for a year; the page also renders from the URL on the first
+request, so an agent can read it without a cookie jar. Old `/code?key=…` links
+redirect to `/claude?key=…`.
 
-Invites live in a Vercel **Edge Config** under the key `tokens`:
-
-```json
-{ "tokens": { "<token>": { "name": "Маша", "createdAt": "…", "lastSeenAt": "…" } } }
-```
-
-`/admin` (password = `ADMIN_TOKEN`) lists everyone, creates a link for a name,
-and revokes / restores / deletes entries. Writes go through the Vercel REST API,
-so `VERCEL_API_TOKEN` + `EDGE_CONFIG_ID` must be set; reads only need
-`EDGE_CONFIG`.
-
-### Claude Code keys
-
-`/admin` has a **Claude Code** tab that manages keys on a self-hosted Claude Code
-hub (CLIProxyAPI plus a small service that issues keys and records usage). Each
-key gets a page at `/claude?key=<key>` (old `/code` links redirect there) for the
-agent on that machine: the account's weekly limit, spend for that key, the endpoint
-and key, and how to connect Claude Code and T3 Code. The page renders on the first
-request, so an agent can read it without keeping cookies. A key can carry a
-Telegram username; its avatar is shown top right. Set `HUB_URL` (the hub's public address)
-and `HUB_ADMIN_KEY` (the hub's admin key); the admin key stays on the server.
+- `/claude` — the account's weekly limit (this key's part in its color, the
+  rest in gray, what is left), this key's spend, the endpoint and key (blurred
+  on screen, copy buttons copy it), and how to connect T3 Code and Claude Code.
+- `/blancvpn` — install, login by code, BlancVPN emails.
+- `/admin` (admin keys only) — the weekly limit split by key colors, issue a
+  key, and per key: color, access, Telegram, links, rename, revoke, delete.
 
 ### Visitor notifications
 
-When both `TELEGRAM_*` vars are set, the bot messages you whenever an invited
-person opens `/claude` or `/blancvpn` — name from the invite, IP and city from
+When both `TELEGRAM_*` vars are set, the bot messages you whenever someone
+opens `/blancvpn` — name from the key, IP and city from
 Vercel headers — at most once per 10 minutes per page per browser (throttled by
-an httpOnly cookie set on the server). The first use of an invite is marked 🆕.
+an httpOnly cookie set on the server).
 
 ### Getting a Gmail App Password
 
@@ -159,18 +138,17 @@ is never cached.
 app/
   page.tsx              Landing — two logo cards
   blancvpn/page.tsx     BlancVPN: install + login by code + emails
-  claude/page.tsx       Claude.ai: login by secure link + emails; agent page for a Claude Code key
-  admin/page.tsx        Invite management (behind ADMIN_TOKEN)
+  claude/page.tsx       Limits, spend and connection for the signed-in key
+  admin/page.tsx        Keys and the weekly limit by key (admin keys)
   api/messages/route.ts List endpoint (per category) + visit notification
   api/message/route.ts  Single full-email endpoint
-  api/admin/*           Admin login + invite CRUD
-middleware.ts           Invite-link cookie + API access checks
+  api/hub/admin/*       Admin pass-through to the hub
+middleware.ts           Personal link → key cookie
 lib/
-  access.ts             Invite lookup (Edge Config, edge-safe)
-  access-store.ts       Invite writes via Vercel API (server-only)
+  hub.ts / session.ts   The key of this browser and its usage, from the hub
   visit.ts              Telegram visit notifications
   imap.ts               IMAP connect / search / parse (server-only)
-  extract.ts            Pull code / login URL out of an email
+  extract.ts            Pull the code out of an email
   config.ts             Env-var reading
   install-links.ts      BlancVPN download links
 components/
@@ -184,8 +162,8 @@ public/logos/           BlancVPN and Claude logos
 
 ## Notes & limitations
 
-- Built for **one mailbox** (a personal helper). Anyone holding a valid invite
-  link sees the codes, so treat links as secrets and revoke leaked ones in
+- Built for **one mailbox** (a personal helper). Anyone holding a key with BlancVPN access
+  sees the codes, so treat links as secrets and revoke leaked ones in
   `/admin`.
 - Codes/links are matched by sender + subject; if those email templates change,
   update the rules in `lib/imap.ts` / `lib/extract.ts`.

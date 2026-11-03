@@ -19,6 +19,12 @@ export interface HubKey {
   name: string;
   /** Telegram username without "@", shown as the avatar. */
   telegram: string | null;
+  /** Hex color of the key in charts and the avatar. */
+  color: string;
+  /** What the key opens: Claude (Claude Code through the hub and /claude), BlancVPN page, admin. */
+  claude: boolean;
+  blancvpn: boolean;
+  admin: boolean;
   key: string;
   key_hint: string;
   created_at: number;
@@ -71,7 +77,7 @@ export function hubAdminKey(): string | null {
   return process.env.HUB_ADMIN_KEY?.trim() || null;
 }
 
-/** The hub key saved in this browser, with its usage; null if missing or revoked. */
+/** The key of this browser (cookie, or the URL via middleware), with its usage; null if missing or revoked. */
 export async function currentHubKey(): Promise<HubMe | null> {
   const key = (await headers()).get(HUB_KEY_HEADER) || (await cookies()).get(HUB_KEY_COOKIE)?.value;
   if (!key || !HUB_URL) return null;

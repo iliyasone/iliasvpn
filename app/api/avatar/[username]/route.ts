@@ -1,19 +1,15 @@
 import { NextResponse } from "next/server";
-import { TELEGRAM_RE, readTokens } from "@/lib/access";
-import { ADMIN_TELEGRAM } from "@/lib/session";
 import { isHubTelegram } from "@/lib/hub";
 import { telegramProfile } from "@/lib/telegram-profile";
 
 export const runtime = "nodejs";
 
-/** Telegram avatar of the admin, an invited person or a Claude Code key, served from this site. */
+const TELEGRAM_RE = /^[A-Za-z0-9_]{4,32}$/;
+
+/** Telegram avatar of a key's owner, served from this site. */
 export async function GET(_request: Request, { params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
-  const known =
-    username === ADMIN_TELEGRAM ||
-    Object.values(await readTokens()).some((e) => e.telegram === username) ||
-    (TELEGRAM_RE.test(username) && (await isHubTelegram(username)));
-  if (!TELEGRAM_RE.test(username) || !known) {
+  if (!TELEGRAM_RE.test(username) || !(await isHubTelegram(username))) {
     return new NextResponse(null, { status: 404 });
   }
   const { photo } = await telegramProfile(username);

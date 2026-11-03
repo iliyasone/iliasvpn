@@ -7,10 +7,13 @@ import { currentViewer, viewerCan } from "@/lib/session";
 import { Topbar } from "@/components/Topbar";
 import { getLoginEmail } from "@/lib/config";
 
-export default async function BlancVpnPage() {
+export const dynamic = "force-dynamic";
+
+export default async function BlancVpnPage({ searchParams }: { searchParams: Promise<{ bad?: string }> }) {
   const viewer = await currentViewer();
   if (!viewerCan(viewer, "blancvpn")) {
-    return <Locked logo="/logos/blancvpn.png" alt="BlancVPN" signedIn={Boolean(viewer)} />;
+    const { bad } = await searchParams;
+    return <Locked logo="/logos/blancvpn.png" alt="BlancVPN" signedIn={Boolean(viewer)} bad={Boolean(bad)} />;
   }
   const email = getLoginEmail();
 
@@ -72,7 +75,6 @@ export default async function BlancVpnPage() {
         <Inbox
           primary="blancvpn"
           also="news"
-          kind="code"
           accent="blanc"
           emptyText="Здесь появятся коды и новости BlancVPN."
         />

@@ -1,8 +1,6 @@
 import "server-only";
 import { cookies, headers } from "next/headers";
 import { notifyTelegram } from "./telegram";
-import { touchInvite } from "./access-store";
-import type { AccessEntry } from "./access";
 
 const PING_EVERY_S = 10 * 60;
 
@@ -25,14 +23,11 @@ function visitorLocation(h: Headers): { ip: string; place: string } {
 }
 
 /**
- * Called from the messages API on behalf of an authenticated visitor.
+ * Called from the messages API on behalf of a signed-in visitor.
  * Notifies at most once per 10 minutes per page per browser; the throttle
  * lives in an httpOnly cookie the browser cannot forge.
  */
-export async function recordVisit(
-  invite: AccessEntry & { token: string },
-  page: string,
-): Promise<void> {
+export async function recordVisit(name: string, page: string): Promise<void> {
   const pageName = PAGE_NAMES[page];
   if (!pageName) return;
 
@@ -49,11 +44,5 @@ export async function recordVisit(
 
   const { ip, place } = visitorLocation(await headers());
   const from = [place, ip].filter(Boolean).join(" · ");
-  const before = await touchInvite(invite.token, from);
-  const first = !before?.firstSeenAt;
-
-  const text = first
-    ? `🆕 ${invite.name} — первый вход, страница ${pageName}\n${from}`
-    : `👤 ${invite.name} открыл(а) ${pageName}\n${from}`;
-  await notifyTelegram(text).catch((err) => console.error("[visit]", err));
+  await notifyTelegram(`👤 ${name} открыл(а) ${pageName}\n${from}`).catch((err) => console.error("[visit]", err));
 }

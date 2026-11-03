@@ -1,6 +1,6 @@
-export type Category = "claude" | "blancvpn" | "news";
+export type Category = "blancvpn" | "news";
 
-export const CATEGORIES: Category[] = ["claude", "blancvpn", "news"];
+export const CATEGORIES: Category[] = ["blancvpn", "news"];
 
 export function isCategory(value: unknown): value is Category {
   return typeof value === "string" && CATEGORIES.includes(value as Category);
@@ -15,8 +15,6 @@ export interface MailMessage {
   date: string;
   preview: string;
   code?: string;
-  loginUrl?: string;
-  loginClient?: string;
 }
 
 export interface FullMail {

@@ -4,7 +4,17 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Avatar } from "./Avatar";
 
-export function UserMenu({ name, telegram, admin }: { name: string; telegram?: string; admin: boolean }) {
+export function UserMenu({
+  name,
+  telegram,
+  color,
+  admin,
+}: {
+  name: string;
+  telegram?: string;
+  color: string;
+  admin: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -25,7 +35,7 @@ export function UserMenu({ name, telegram, admin }: { name: string; telegram?: s
         </Link>
       )}
       <button type="button" className="user-button" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-        <Avatar name={name} telegram={telegram} />
+        <Avatar name={name} telegram={telegram} color={color} />
       </button>
       {open && (
         <div className="user-menu">

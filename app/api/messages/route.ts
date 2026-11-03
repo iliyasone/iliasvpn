@@ -5,7 +5,6 @@ import {
   isCategory,
 } from "@/lib/imap";
 import { getLoginEmail } from "@/lib/config";
-import { serviceOf } from "@/lib/access";
 import { currentViewer, viewerCan } from "@/lib/session";
 import { recordVisit } from "@/lib/visit";
 
@@ -16,17 +15,17 @@ export async function GET(request: Request) {
   const category = new URL(request.url).searchParams.get("category");
   if (!isCategory(category)) {
     return NextResponse.json(
-      { error: "Unknown category. Use claude, blancvpn or news." },
+      { error: "Unknown category. Use blancvpn or news." },
       { status: 400 },
     );
   }
 
   const viewer = await currentViewer();
-  if (!viewerCan(viewer, serviceOf(category))) {
+  if (!viewerCan(viewer, "blancvpn")) {
     return NextResponse.json({ error: "Нет доступа.", code: "NO_ACCESS" }, { status: 401 });
   }
-  if (viewer?.kind === "invite" && category !== "news") {
-    await recordVisit(viewer.invite, category).catch((err) => console.error("[api/messages] visit", err));
+  if (viewer && !viewer.admin && category !== "news") {
+    await recordVisit(viewer.name, category).catch((err) => console.error("[api/messages] visit", err));
   }
 
   try {

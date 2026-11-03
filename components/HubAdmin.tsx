@@ -6,6 +6,7 @@ import { CopyButton } from "./CopyButton";
 import {
   DailyChart,
   LimitBars,
+  WeekBar,
   ModelList,
   StatRow,
   ago,
@@ -21,6 +22,10 @@ interface Key {
   id: number;
   name: string;
   telegram: string | null;
+  color: string;
+  claude: boolean;
+  blancvpn: boolean;
+  admin: boolean;
   key: string;
   key_hint: string;
   created_at: number;
@@ -52,6 +57,7 @@ export function HubAdmin({ hub }: { hub: string }) {
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState("");
   const [telegram, setTelegram] = useState("");
+  const [access, setAccess] = useState({ claude: true, blancvpn: false });
   const [created, setCreated] = useState<{ name: string; key: string } | null>(null);
   const [open, setOpen] = useState<number | null>(null);
 
@@ -94,7 +100,7 @@ export function HubAdmin({ hub }: { hub: string }) {
     e.preventDefault();
     const clean = name.trim();
     if (!clean) return;
-    const res = await call("keys", "POST", { name: clean, telegram: telegram.trim() });
+    const res = await call("keys", "POST", { name: clean, telegram: telegram.trim(), ...access });
     if (res) {
       setName("");
       setTelegram("");
@@ -102,17 +108,20 @@ export function HubAdmin({ hub }: { hub: string }) {
     }
   }
 
-  async function act(k: Key, action: Action) {
+  async function act(k: Key, action: Action, value?: unknown) {
     if (action === "delete" && !confirm(`Удалить ключ «${k.name}»? Статистика по нему останется без имени.`)) return;
     if (action === "rename") {
       const next = prompt("Новое имя", k.name)?.trim();
       if (!next || next === k.name) return;
-      return call(`keys/${k.id}/rename`, "POST", { name: next });
+      return call(`keys/${k.id}/update`, "POST", { name: next });
     }
     if (action === "telegram") {
       const next = prompt("Telegram (@username или ссылка t.me/…), пусто — убрать", k.telegram ?? "");
       if (next === null) return;
-      return call(`keys/${k.id}/telegram`, "POST", { telegram: next.trim() });
+      return call(`keys/${k.id}/update`, "POST", { telegram: next.trim() });
+    }
+    if (action === "color" || action === "claude" || action === "blancvpn") {
+      return call(`keys/${k.id}/update`, "POST", { [action]: value });
     }
     if (action === "delete") return call(`keys/${k.id}`, "DELETE");
     return call(`keys/${k.id}/${action}`, "POST");
@@ -129,8 +138,12 @@ export function HubAdmin({ hub }: { hub: string }) {
     <>
       <section className="section">
         <h2 className="section-title">Аккаунт</h2>
+        <WeekBar
+          limits={data.limits}
+          segments={data.keys.filter((k) => k.week_limit > 0).map((k) => ({ label: k.name, color: k.color, value: k.week_limit }))}
+          restLabel={data.week_baseline === null ? "Без хаба" : "До хаба и мимо него"}
+        />
         <LimitBars limits={data.limits} />
-        <LimitSplit data={data} />
         <StatRow today={data.today} week={data.week} />
         <DailyChart daily={data.daily} />
         <p className="step-note">
@@ -158,6 +171,19 @@ export function HubAdmin({ hub }: { hub: string }) {
             onChange={(e) => setTelegram(e.target.value)}
             disabled={busy}
           />
+          <div className="access">
+            {SERVICES.map(([service, label]) => (
+              <label key={service}>
+                <input
+                  type="checkbox"
+                  checked={access[service]}
+                  onChange={(e) => setAccess({ ...access, [service]: e.target.checked })}
+                  disabled={busy}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
           <button className="btn btn-dark" type="submit" disabled={busy || !name.trim()}>
             Выпустить
           </button>
@@ -166,10 +192,10 @@ export function HubAdmin({ hub }: { hub: string }) {
         {created && (
           <div className="latest latest-claude">
             <p className="latest-label">Ключ для {created.name}</p>
-            <p className="step-note">Ссылка на страницу ключа: инструкция и расход.</p>
-            <div className="admin-link">{keyPageUrl(origin(), created.key)}</div>
+            <p className="step-note">Личная ссылка: вход на сайт, лимиты, расход и инструкция.</p>
+            <div className="admin-link">{keyPageUrl(origin(), created.key, access.claude)}</div>
             <div className="latest-meta">
-              <CopyButton value={keyPageUrl(origin(), created.key)} label="Копировать ссылку" />
+              <CopyButton value={keyPageUrl(origin(), created.key, access.claude)} label="Копировать ссылку" />
               <CopyButton value={setupCommand(hub, created.key)} label="Копировать команду установки" />
             </div>
           </div>
@@ -200,29 +226,24 @@ export function HubAdmin({ hub }: { hub: string }) {
   );
 }
 
-/** How this week's limit splits: per key through the hub, and the rest (before the hub or around it). */
-function LimitSplit({ data }: { data: Overview }) {
-  const total = data.limits.find((l) => l.window === "7d")?.utilization;
-  if (total === undefined) return null;
-  const keys = data.keys.filter((k) => k.week_limit > 0).sort((a, b) => b.week_limit - a.week_limit);
-  const viaHub = keys.reduce((s, k) => s + k.week_limit, 0);
-  return (
-    <ul className="split">
-      {keys.map((k) => (
-        <li key={k.id}>
-          <span>{k.name}</span>
-          <span>≈{pct(k.week_limit)}</span>
-        </li>
-      ))}
-      <li className="split-rest">
-        <span>{data.week_baseline === null ? "Без хаба" : "До хаба и мимо него"}</span>
-        <span>{pct(Math.max(0, total - viaHub))}</span>
-      </li>
-    </ul>
-  );
-}
+type Action = "revoke" | "restore" | "delete" | "rename" | "telegram" | "color" | "claude" | "blancvpn";
 
-type Action = "revoke" | "restore" | "delete" | "rename" | "telegram";
+const SERVICES = [
+  ["claude", "Claude"],
+  ["blancvpn", "BlancVPN"],
+] as const;
+
+/** Color input that saves once the picker settles, not on every move. */
+function ColorPick({ value, disabled, onCommit }: { value: string; disabled: boolean; onCommit: (c: string) => void }) {
+  const [draft, setDraft] = useState(value);
+  useEffect(() => setDraft(value), [value]);
+  useEffect(() => {
+    if (draft === value) return;
+    const t = window.setTimeout(() => onCommit(draft), 600);
+    return () => window.clearTimeout(t);
+  }, [draft, value, onCommit]);
+  return <input type="color" value={draft} disabled={disabled} onChange={(e) => setDraft(e.target.value)} />;
+}
 
 function KeyRow({
   hub,
@@ -237,12 +258,12 @@ function KeyRow({
   open: boolean;
   busy: boolean;
   onToggle: () => void;
-  onAct: (k: Key, action: Action) => void;
+  onAct: (k: Key, action: Action, value?: unknown) => void;
 }) {
   return (
     <li className={`hub-row${k.revoked_at ? " admin-row-revoked" : ""}${open ? " hub-row-open" : ""}`}>
       <button type="button" className="hub-row-head" onClick={onToggle} aria-expanded={open}>
-        <Avatar name={k.name} telegram={k.telegram ?? undefined} />
+        <Avatar name={k.name} telegram={k.telegram ?? undefined} color={k.color} />
         <span className="hub-row-name">
           <span className="admin-name">{k.name}</span>
           <span className="admin-meta">{k.revoked_at ? `отозван ${when(k.revoked_at)}` : ago(k.total.last_used_at)}</span>
@@ -259,11 +280,29 @@ function KeyRow({
           <ModelList models={k.models} />
           <p className="admin-meta">
             {k.key_hint} · создан {when(k.created_at)}
+            {k.admin && " · админ"}
           </p>
+          <div className="access">
+            <label>
+              <ColorPick value={k.color} disabled={busy} onCommit={(c) => onAct(k, "color", c)} />
+              Цвет
+            </label>
+            {SERVICES.map(([service, label]) => (
+              <label key={service}>
+                <input
+                  type="checkbox"
+                  checked={k[service]}
+                  disabled={busy}
+                  onChange={(e) => onAct(k, service, e.target.checked)}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
           <div className="hub-actions">
             {!k.revoked_at && (
               <>
-                <CopyButton value={keyPageUrl(origin(), k.key)} label="Ссылка" />
+                <CopyButton value={keyPageUrl(origin(), k.key, k.claude)} label="Ссылка" />
                 <CopyButton value={setupCommand(hub, k.key)} label="Команда установки" />
                 <CopyButton value={usageCommand(hub, k.key)} label="Команда расхода" />
                 <CopyButton value={k.key} label="Ключ" />
