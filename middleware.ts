@@ -48,5 +48,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/claude", "/blancvpn", "/code", "/admin"],
+  matcher: ["/", "/claude", "/gemini", "/blancvpn", "/code", "/admin"],
 };

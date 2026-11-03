@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { currentHubKey, type HubMe } from "./hub";
 
-export type Service = "claude" | "blancvpn";
+export type Service = "claude" | "gemini" | "blancvpn";
 
 /** Who is looking at the page: the holder of a key (person or agent), with its usage. */
 export interface Viewer {
@@ -23,7 +23,7 @@ export const currentViewer = cache(async (): Promise<Viewer | null> => {
     telegram: key.telegram ?? undefined,
     color: key.color,
     admin: key.admin,
-    access: { claude: key.claude, blancvpn: key.blancvpn },
+    access: { claude: key.claude, gemini: key.gemini, blancvpn: key.blancvpn },
     me,
   };
 });

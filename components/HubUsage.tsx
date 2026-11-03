@@ -186,3 +186,36 @@ export function ModelList({ models }: { models: { model: string; cost: number; r
     </ul>
   );
 }
+
+export interface GeminiTotals {
+  cost: number;
+  minutes: number;
+  requests: number;
+  last_used_at: number | null;
+}
+
+/** Gemini dictation through the proxy: today, 7 and 30 days — dollars and minutes of audio. */
+export function GeminiStats({ usage }: { usage: { today: GeminiTotals; week: GeminiTotals; month: GeminiTotals } }) {
+  const cells: [string, GeminiTotals][] = [
+    ["Сегодня", usage.today],
+    ["7 дней", usage.week],
+    ["30 дней", usage.month],
+  ];
+  return (
+    <div className="stats">
+      {cells.map(([label, t]) => (
+        <div key={label} className="stat">
+          <span className="stat-label">{label}</span>
+          <span className="stat-value">{money(t.cost)}</span>
+          <span className="stat-sub">{minutes(t.minutes)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function minutes(m: number): string {
+  if (m === 0) return "0 мин";
+  if (m < 1) return "<1 мин";
+  return m < 120 ? `${Math.round(m)} мин` : `${(m / 60).toFixed(1).replace(".", ",")} ч`;
+}
