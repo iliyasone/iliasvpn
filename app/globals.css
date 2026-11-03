@@ -628,3 +628,265 @@ code {
     grid-template-columns: 1fr;
   }
 }
+
+/* Claude Code hub */
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin: -16px 0 32px;
+  padding: 4px;
+  background: #f5f5f6;
+  border-radius: 11px;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.tab-active {
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.key-head {
+  margin-bottom: 32px;
+}
+
+.key-name {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 4px;
+}
+
+.limits {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.limit-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  margin-bottom: 7px;
+}
+
+.limit-pct {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.limit-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #f1f1f2;
+  overflow: hidden;
+}
+
+.limit-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--claude);
+  transition: width 0.3s ease;
+}
+
+.limit-fill-warm {
+  background: #d9902f;
+}
+
+.limit-fill-hot {
+  background: #c8412f;
+}
+
+.limit-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--faint);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  min-width: 0;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--faint);
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.chart {
+  margin-bottom: 14px;
+}
+
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 72px;
+}
+
+.chart-col {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  background: #f7f7f8;
+  border-radius: 4px;
+}
+
+.chart-bar {
+  width: 100%;
+  background: var(--claude);
+  border-radius: 4px;
+  opacity: 0.85;
+}
+
+.chart-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--faint);
+}
+
+.models {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.models li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.models span {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.codeblock {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.codeblock pre {
+  margin: 0;
+  padding: 12px 14px;
+  overflow-x: auto;
+  background: #fafafa;
+  font-size: 12.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.codeblock-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 7px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.hub-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+
+.hub-row {
+  border-bottom: 1px solid var(--line);
+}
+
+.hub-row-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 2px;
+  background: none;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.hub-row-name,
+.hub-row-cost {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.hub-row-name .admin-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hub-row-cost {
+  align-items: flex-end;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.hub-row-body {
+  padding: 4px 2px 18px;
+}
+
+.hub-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 12px;
+}
+
+.home-card-code {
+  grid-column: 1 / -1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 2px;
+  padding: 20px;
+  font-weight: 600;
+}
