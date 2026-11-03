@@ -1057,3 +1057,8 @@ code {
 .hub-row-name {
   flex: 1;
 }
+
+.secret-blur {
+  filter: blur(5px);
+  user-select: none;
+}

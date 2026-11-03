@@ -1,10 +1,12 @@
 import { CopyButton } from "./CopyButton";
+import { withSecret } from "./Secret";
 
-export function CodeBlock({ value, label = "Копировать" }: { value: string; label?: string }) {
+/** Code with a copy button; `secret` is blurred on screen but copied as is. */
+export function CodeBlock({ value, label = "Копировать", secret }: { value: string; label?: string; secret?: string }) {
   return (
     <div className="codeblock">
       <pre>
-        <code>{value}</code>
+        <code>{withSecret(value, secret)}</code>
       </pre>
       <div className="codeblock-bar">
         <CopyButton value={value} label={label} />

@@ -2,6 +2,7 @@ import { Topbar } from "./Topbar";
 import { CodeBlock } from "./CodeBlock";
 import { Collapsible } from "./Collapsible";
 import { CopyButton } from "./CopyButton";
+import { Secret } from "./Secret";
 import { DailyChart, KeyLimit, LimitBars, ModelList, StatRow, ago } from "./HubUsage";
 import { HUB_URL, type HubMe } from "@/lib/hub";
 import { settingsSnippet, setupCommand, usageCommand } from "@/lib/hub-setup";
@@ -40,13 +41,10 @@ export function AgentPage({ me }: { me: HubMe }) {
           </dd>
           <dt>Ключ · ANTHROPIC_AUTH_TOKEN</dt>
           <dd className="email-chip">
-            <code>{key.key}</code>
+            <code><Secret value={key.key} /></code>
             <CopyButton value={key.key} label="Копировать" />
           </dd>
         </dl>
-        <p className="step-note">
-          Входить в аккаунт Claude на машине не нужно: хаб сам ходит в общий аккаунт, расход записывается на этот ключ.
-        </p>
       </section>
 
       <section className="section">
@@ -61,7 +59,7 @@ export function AgentPage({ me }: { me: HubMe }) {
           <li className="step">
             <div className="step-body">
               <p className="step-lead">Environment → Variables → Add variable — две переменные</p>
-              <CodeBlock value={`ANTHROPIC_BASE_URL=${HUB_URL}\nANTHROPIC_AUTH_TOKEN=${key.key}`} />
+              <CodeBlock value={`ANTHROPIC_BASE_URL=${HUB_URL}\nANTHROPIC_AUTH_TOKEN=${key.key}`} secret={key.key} />
               <p className="step-note">Ключ оставьте скрытым (sensitive).</p>
             </div>
           </li>
@@ -77,16 +75,16 @@ export function AgentPage({ me }: { me: HubMe }) {
       <section className="section">
         <h2 className="section-title">Claude Code в терминале</h2>
         <p className="step-note">Команда записывает обе переменные в ~/.claude/settings.json на машине.</p>
-        <CodeBlock value={setupCommand(HUB_URL, key.key)} />
+        <CodeBlock value={setupCommand(HUB_URL, key.key)} secret={key.key} />
         <Collapsible title="Или вручную: ~/.claude/settings.json">
-          <CodeBlock value={settingsSnippet(HUB_URL, key.key)} />
+          <CodeBlock value={settingsSnippet(HUB_URL, key.key)} secret={key.key} />
         </Collapsible>
       </section>
 
       <section className="section">
         <h2 className="section-title">Проверить с машины</h2>
         <p className="step-note">Лимиты и расход этого ключа текстом:</p>
-        <CodeBlock value={usageCommand(HUB_URL, key.key)} />
+        <CodeBlock value={usageCommand(HUB_URL, key.key)} secret={key.key} />
       </section>
     </div>
   );
