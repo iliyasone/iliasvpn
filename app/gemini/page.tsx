@@ -8,7 +8,7 @@ export default async function Gemini({ searchParams }: { searchParams: Promise<{
   const viewer = await currentViewer();
   if (!viewer || !viewerCan(viewer, "gemini")) {
     const { bad } = await searchParams;
-    return <Locked logo="/logos/gemini.svg" alt="Gemini" signedIn={Boolean(viewer)} bad={Boolean(bad)} />;
+    return <Locked logo="/logos/ciao.svg" alt="Ciao" signedIn={Boolean(viewer)} bad={Boolean(bad)} />;
   }
   return <GeminiPage me={viewer.me} />;
 }
