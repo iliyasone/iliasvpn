@@ -1,8 +1,19 @@
+import type { ReactNode } from "react";
 import { Topbar } from "./Topbar";
 
 const TG_URL = "https://t.me/iliyasone";
 
-export function Locked({ logo, alt, signedIn = false }: { logo: string; alt: string; signedIn?: boolean }) {
+export function Locked({
+  logo,
+  alt,
+  signedIn = false,
+  children,
+}: {
+  logo: string;
+  alt: string;
+  signedIn?: boolean;
+  children?: ReactNode;
+}) {
   return (
     <div className="container">
       <Topbar back="/" />
@@ -25,6 +36,7 @@ export function Locked({ logo, alt, signedIn = false }: { logo: string; alt: str
           Написать Ильясу →
         </a>
       </section>
+      {children}
     </div>
   );
 }

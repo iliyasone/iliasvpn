@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Avatar } from "./Avatar";
 import { CopyButton } from "./CopyButton";
 import {
   DailyChart,
@@ -19,6 +20,7 @@ import { keyPageUrl, setupCommand, usageCommand } from "@/lib/hub-setup";
 interface Key {
   id: number;
   name: string;
+  telegram: string | null;
   key: string;
   key_hint: string;
   created_at: number;
@@ -49,6 +51,7 @@ export function HubAdmin({ hub }: { hub: string }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState("");
+  const [telegram, setTelegram] = useState("");
   const [created, setCreated] = useState<{ name: string; key: string } | null>(null);
   const [open, setOpen] = useState<number | null>(null);
 
@@ -91,19 +94,25 @@ export function HubAdmin({ hub }: { hub: string }) {
     e.preventDefault();
     const clean = name.trim();
     if (!clean) return;
-    const res = await call("keys", "POST", { name: clean });
+    const res = await call("keys", "POST", { name: clean, telegram: telegram.trim() });
     if (res) {
       setName("");
+      setTelegram("");
       setCreated(res as { name: string; key: string });
     }
   }
 
-  async function act(k: Key, action: "revoke" | "restore" | "delete" | "rename") {
+  async function act(k: Key, action: Action) {
     if (action === "delete" && !confirm(`Удалить ключ «${k.name}»? Статистика по нему останется без имени.`)) return;
     if (action === "rename") {
       const next = prompt("Новое имя", k.name)?.trim();
       if (!next || next === k.name) return;
       return call(`keys/${k.id}/rename`, "POST", { name: next });
+    }
+    if (action === "telegram") {
+      const next = prompt("Telegram (@username или ссылка t.me/…), пусто — убрать", k.telegram ?? "");
+      if (next === null) return;
+      return call(`keys/${k.id}/telegram`, "POST", { telegram: next.trim() });
     }
     if (action === "delete") return call(`keys/${k.id}`, "DELETE");
     return call(`keys/${k.id}/${action}`, "POST");
@@ -139,6 +148,14 @@ export function HubAdmin({ hub }: { hub: string }) {
             placeholder="Машина или агент, например vm-2"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            disabled={busy}
+          />
+          <input
+            className="gate-input"
+            type="text"
+            placeholder="Telegram: @username"
+            value={telegram}
+            onChange={(e) => setTelegram(e.target.value)}
             disabled={busy}
           />
           <button className="btn btn-dark" type="submit" disabled={busy || !name.trim()}>
@@ -205,6 +222,8 @@ function LimitSplit({ data }: { data: Overview }) {
   );
 }
 
+type Action = "revoke" | "restore" | "delete" | "rename" | "telegram";
+
 function KeyRow({
   hub,
   k,
@@ -218,11 +237,12 @@ function KeyRow({
   open: boolean;
   busy: boolean;
   onToggle: () => void;
-  onAct: (k: Key, action: "revoke" | "restore" | "delete" | "rename") => void;
+  onAct: (k: Key, action: Action) => void;
 }) {
   return (
     <li className={`hub-row${k.revoked_at ? " admin-row-revoked" : ""}${open ? " hub-row-open" : ""}`}>
       <button type="button" className="hub-row-head" onClick={onToggle} aria-expanded={open}>
+        <Avatar name={k.name} telegram={k.telegram ?? undefined} />
         <span className="hub-row-name">
           <span className="admin-name">{k.name}</span>
           <span className="admin-meta">{k.revoked_at ? `отозван ${when(k.revoked_at)}` : ago(k.total.last_used_at)}</span>
@@ -251,6 +271,9 @@ function KeyRow({
             )}
             <button className="linkbtn" disabled={busy} onClick={() => onAct(k, "rename")}>
               Переименовать
+            </button>
+            <button className="linkbtn" disabled={busy} onClick={() => onAct(k, "telegram")}>
+              {k.telegram ? `@${k.telegram}` : "Telegram"}
             </button>
             {k.revoked_at ? (
               <>
