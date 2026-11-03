@@ -27,5 +27,5 @@ export function usageCommand(hub: string, key: string): string {
 }
 
 export function keyPageUrl(origin: string, key: string): string {
-  return `${origin}/code?key=${key}`;
+  return `${origin}/claude?key=${key}`;
 }

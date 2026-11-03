@@ -1,9 +1,11 @@
 import "server-only";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 /** Public address of the Claude Code hub (CLIProxyAPI with a key/usage service in front). */
 export const HUB_URL = (process.env.HUB_URL || "").replace(/\/$/, "");
 export const HUB_KEY_COOKIE = "hubkey";
+/** Set by middleware when the key came in the URL, so the page renders on the first request (agents fetch without cookies). */
+export const HUB_KEY_HEADER = "x-hub-key";
 
 export interface HubTotals {
   cost: number;
@@ -15,6 +17,8 @@ export interface HubTotals {
 export interface HubKey {
   id: number;
   name: string;
+  /** Telegram username without "@", shown as the avatar. */
+  telegram: string | null;
   key: string;
   key_hint: string;
   created_at: number;
@@ -69,9 +73,19 @@ export function hubAdminKey(): string | null {
 
 /** The hub key saved in this browser, with its usage; null if missing or revoked. */
 export async function currentHubKey(): Promise<HubMe | null> {
-  const key = (await cookies()).get(HUB_KEY_COOKIE)?.value;
+  const key = (await headers()).get(HUB_KEY_HEADER) || (await cookies()).get(HUB_KEY_COOKIE)?.value;
   if (!key || !HUB_URL) return null;
   const res = await hubFetch("/hub/me", key).catch(() => null);
   if (!res?.ok) return null;
   return (await res.json()) as HubMe;
+}
+
+/** Whether a Telegram username belongs to one of the hub keys (for the avatar proxy). */
+export async function isHubTelegram(username: string): Promise<boolean> {
+  const admin = hubAdminKey();
+  if (!admin || !HUB_URL) return false;
+  const res = await hubFetch("/hub/admin/keys", admin).catch(() => null);
+  if (!res?.ok) return false;
+  const { keys } = (await res.json()) as { keys: { telegram: string | null }[] };
+  return keys.some((k) => k.telegram === username);
 }

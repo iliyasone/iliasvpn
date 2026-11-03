@@ -8,6 +8,7 @@ import {
 } from "@/lib/access";
 
 const HUB_KEY_COOKIE = "hubkey";
+const HUB_KEY_HEADER = "x-hub-key";
 
 async function hubKeyIsLive(key: string): Promise<boolean> {
   const base = (process.env.HUB_URL || "").replace(/\/$/, "");
@@ -24,23 +25,34 @@ const PROTECTED_API = ["/api/messages", "/api/message"];
 export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
-  // Claude Code key link: /code?key=<hub key> → remember the key in a cookie.
-  const hubKey = pathname === "/code" ? searchParams.get("key") : null;
-  if (hubKey !== null) {
+  // Old key links: /code?key=… → /claude?key=…
+  if (pathname === "/code") {
     const url = request.nextUrl.clone();
-    url.searchParams.delete("key");
-    const valid = /^sk-hub-[0-9a-f]{48}$/.test(hubKey.trim()) && (await hubKeyIsLive(hubKey.trim()));
-    if (!valid) url.searchParams.set("bad", "1");
-    const res = NextResponse.redirect(url);
-    if (valid) {
-      res.cookies.set(HUB_KEY_COOKIE, hubKey.trim(), {
-        httpOnly: true,
-        sameSite: "lax",
-        secure: request.nextUrl.protocol === "https:",
-        path: "/",
-        maxAge: ACCESS_COOKIE_MAX_AGE,
-      });
+    url.pathname = "/claude";
+    return NextResponse.redirect(url);
+  }
+
+  // Claude Code key link: /claude?key=<hub key> → render the agent page right away
+  // (agents fetch it without a cookie jar) and remember the key in a cookie.
+  const hubKey = pathname === "/claude" ? searchParams.get("key")?.trim() : undefined;
+  if (hubKey !== undefined) {
+    const valid = /^sk-hub-[0-9a-f]{48}$/.test(hubKey) && (await hubKeyIsLive(hubKey));
+    if (!valid) {
+      const url = request.nextUrl.clone();
+      url.searchParams.delete("key");
+      url.searchParams.set("bad", "1");
+      return NextResponse.redirect(url);
     }
+    const headers = new Headers(request.headers);
+    headers.set(HUB_KEY_HEADER, hubKey);
+    const res = NextResponse.next({ request: { headers } });
+    res.cookies.set(HUB_KEY_COOKIE, hubKey, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: request.nextUrl.protocol === "https:",
+      path: "/",
+      maxAge: ACCESS_COOKIE_MAX_AGE,
+    });
     return res;
   }
 

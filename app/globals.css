@@ -1027,3 +1027,38 @@ code {
 .split-rest span:last-child {
   font-weight: 400 !important;
 }
+
+.conn {
+  margin: 0 0 12px;
+}
+
+.conn dt {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+
+.conn dd {
+  margin: 0 0 14px;
+}
+
+.conn code {
+  overflow-wrap: anywhere;
+}
+
+.admin-create {
+  flex-wrap: wrap;
+}
+
+.admin-create .gate-input {
+  flex: 1 1 200px;
+}
+
+.hub-row-name {
+  flex: 1;
+}
+
+.secret-blur {
+  filter: blur(5px);
+  user-select: none;
+}

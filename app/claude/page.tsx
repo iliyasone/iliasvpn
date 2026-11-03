@@ -4,11 +4,33 @@ import { Locked } from "@/components/Locked";
 import { currentViewer, viewerCan } from "@/lib/session";
 import { Topbar } from "@/components/Topbar";
 import { getLoginEmail } from "@/lib/config";
+import { AgentPage } from "@/components/AgentPage";
+import { currentHubKey } from "@/lib/hub";
 
-export default async function ClaudePage() {
+export const dynamic = "force-dynamic";
+
+export default async function ClaudePage({ searchParams }: { searchParams: Promise<{ bad?: string }> }) {
+  const me = await currentHubKey();
+  if (me) return <AgentPage me={me} />;
+
   const viewer = await currentViewer();
   if (!viewerCan(viewer, "claude")) {
-    return <Locked logo="/logos/claude.png" alt="Claude" signedIn={Boolean(viewer)} />;
+    const { bad } = await searchParams;
+    return (
+      <Locked logo="/logos/claude.png" alt="Claude" signedIn={Boolean(viewer)}>
+        <section className="section">
+          <form className="admin-login" method="get" action="/claude">
+            <p className="gate-title">Ключ Claude Code</p>
+            <p className="step-note">Для агентов и машин: откройте ссылку с ключом или вставьте ключ сюда.</p>
+            <input className="gate-input" type="password" name="key" placeholder="sk-hub-…" autoComplete="off" />
+            {bad && <p className="admin-error">Ключ не найден или отозван.</p>}
+            <button className="btn btn-dark gate-submit" type="submit">
+              Открыть
+            </button>
+          </form>
+        </section>
+      </Locked>
+    );
   }
   const email = getLoginEmail();
 

@@ -97,8 +97,11 @@ so `VERCEL_API_TOKEN` + `EDGE_CONFIG_ID` must be set; reads only need
 
 `/admin` has a **Claude Code** tab that manages keys on a self-hosted Claude Code
 hub (CLIProxyAPI plus a small service that issues keys and records usage). Each
-key gets a page at `/code?key=<key>` with setup instructions, the account's
-weekly limit, and spend for that key. Set `HUB_URL` (the hub's public address)
+key gets a page at `/claude?key=<key>` (old `/code` links redirect there) for the
+agent on that machine: the account's weekly limit, spend for that key, the endpoint
+and key, and how to connect Claude Code and T3 Code. The page renders on the first
+request, so an agent can read it without keeping cookies. A key can carry a
+Telegram username; its avatar is shown top right. Set `HUB_URL` (the hub's public address)
 and `HUB_ADMIN_KEY` (the hub's admin key); the admin key stays on the server.
 
 ### Visitor notifications
@@ -156,7 +159,7 @@ is never cached.
 app/
   page.tsx              Landing — two logo cards
   blancvpn/page.tsx     BlancVPN: install + login by code + emails
-  claude/page.tsx       Claude.ai: login by secure link + emails
+  claude/page.tsx       Claude.ai: login by secure link + emails; agent page for a Claude Code key
   admin/page.tsx        Invite management (behind ADMIN_TOKEN)
   api/messages/route.ts List endpoint (per category) + visit notification
   api/message/route.ts  Single full-email endpoint
