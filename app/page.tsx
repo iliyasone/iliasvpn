@@ -4,7 +4,7 @@ import { currentViewer, viewerCan } from "@/lib/session";
 
 export default async function HomePage() {
   const viewer = await currentViewer();
-  const show = (s: "blancvpn" | "claude") => !viewer || viewerCan(viewer, s);
+  const show = (s: "blancvpn" | "claude" | "gemini") => !viewer || viewerCan(viewer, s);
 
   return (
     <div className="container">
@@ -19,6 +19,11 @@ export default async function HomePage() {
         {show("claude") && (
           <Link href="/claude" className="home-card home-card-claude">
             <img src="/logos/claude.png" alt="Claude" />
+          </Link>
+        )}
+        {show("gemini") && (
+          <Link href="/gemini" className="home-card home-card-gemini">
+            <img src="/logos/gemini.svg" alt="Gemini" />
           </Link>
         )}
       </div>

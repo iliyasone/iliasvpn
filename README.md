@@ -71,7 +71,8 @@ cp .env.example .env
 Everyone signs in with a personal link `https://<host>/<page>?key=<key>`. Keys
 live in the Claude Code hub (claude-hub): name, Telegram username (avatar),
 color, and what the key opens — **Claude** (Claude Code through the hub plus
-the `/claude` page), **BlancVPN**, and admin. Opening a link stores the key in
+the `/claude` page), **Gemini** (dictation in Ciao through the shared Google key
+plus the `/gemini` page), **BlancVPN**, and admin. Opening a link stores the key in
 an httpOnly cookie for a year; the page also renders from the URL on the first
 request, so an agent can read it without a cookie jar. Old `/code?key=…` links
 redirect to `/claude?key=…`.
@@ -79,9 +80,12 @@ redirect to `/claude?key=…`.
 - `/claude` — the account's weekly limit (this key's part in its color, the
   rest in gray, what is left), this key's spend, the endpoint and key (blurred
   on screen, copy buttons copy it), and how to connect T3 Code and Claude Code.
+- `/gemini` — this key's Gemini spend (today, 7 and 30 days), Ciao downloads
+  from its latest release, and the one link to paste into Ciao:
+  `https://gemini.sheetlife.app/?key=<key>` (the Gemini proxy in claude-hub).
 - `/blancvpn` — install, login by code, BlancVPN emails.
-- `/admin` (admin keys only) — the weekly limit split by key colors, issue a
-  key, and per key: color, access, Telegram, links, rename, revoke, delete.
+- `/admin` (admin keys only) — the weekly limit split by key colors, Gemini
+  spend in total and per key, issue a key, and per key: color, access, Telegram, links, rename, revoke, delete.
 
 ### Visitor notifications
 

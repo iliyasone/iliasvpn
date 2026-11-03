@@ -3,6 +3,8 @@ import { cookies, headers } from "next/headers";
 
 /** Public address of the Claude Code hub (CLIProxyAPI with a key/usage service in front). */
 export const HUB_URL = (process.env.HUB_URL || "").replace(/\/$/, "");
+/** Public address of the Gemini proxy (gemini.mjs in claude-hub): the Gemini API behind hub keys. */
+export const GEMINI_URL = "https://gemini.sheetlife.app";
 export const HUB_KEY_COOKIE = "hubkey";
 /** Set by middleware when the key came in the URL, so the page renders on the first request (agents fetch without cookies). */
 export const HUB_KEY_HEADER = "x-hub-key";
@@ -14,6 +16,22 @@ export interface HubTotals {
   last_used_at: number | null;
 }
 
+/** Gemini transcriptions through the proxy, priced per minute of audio. */
+export interface GeminiTotals {
+  cost: number;
+  minutes: number;
+  requests: number;
+  last_used_at: number | null;
+}
+
+/** Today, the last 7 and 30 days, all time. */
+export interface GeminiUsage {
+  today: GeminiTotals;
+  week: GeminiTotals;
+  month: GeminiTotals;
+  total: GeminiTotals;
+}
+
 export interface HubKey {
   id: number;
   name: string;
@@ -21,8 +39,9 @@ export interface HubKey {
   telegram: string | null;
   /** Hex color of the key in charts and the avatar. */
   color: string;
-  /** What the key opens: Claude (Claude Code through the hub and /claude), BlancVPN page, admin. */
+  /** What the key opens: Claude (Claude Code through the hub and /claude), Gemini (the proxy and /gemini), BlancVPN page, admin. */
   claude: boolean;
+  gemini: boolean;
   blancvpn: boolean;
   admin: boolean;
   key: string;
@@ -34,6 +53,7 @@ export interface HubKey {
   total: HubTotals;
   daily: { date: string; cost: number }[];
   models: { model: string; cost: number; requests: number }[];
+  gemini_usage: GeminiUsage;
   /** Estimated part of the account weekly limit this key used this week (0..1). */
   week_limit: number;
 }
@@ -59,6 +79,7 @@ export interface HubOverview {
   week: HubTotals;
   today: HubTotals;
   daily: { date: string; cost: number }[];
+  gemini: GeminiUsage;
 }
 
 export function hubFetch(path: string, bearer: string, init: RequestInit = {}) {

@@ -26,7 +26,7 @@ export function usageCommand(hub: string, key: string): string {
   return `curl -s ${hub}/hub/me.txt -H "Authorization: Bearer ${key}"`;
 }
 
-/** Personal link of a key: signs the browser in and opens /claude (or the home page without Claude). */
-export function keyPageUrl(origin: string, key: string, claude = true): string {
-  return `${origin}/${claude ? "claude" : ""}?key=${key}`;
+/** Personal link of a key: signs the browser in and opens /claude, else /gemini, else the home page. */
+export function keyPageUrl(origin: string, key: string, access: { claude: boolean; gemini: boolean }): string {
+  return `${origin}/${access.claude ? "claude" : access.gemini ? "gemini" : ""}?key=${key}`;
 }

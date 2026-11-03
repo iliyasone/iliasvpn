@@ -5,14 +5,17 @@ import { Avatar } from "./Avatar";
 import { CopyButton } from "./CopyButton";
 import {
   DailyChart,
+  GeminiStats,
   LimitBars,
   WeekBar,
   ModelList,
   StatRow,
   ago,
+  minutes,
   money,
   pct,
   when,
+  type GeminiTotals,
   type Limit,
   type Totals,
 } from "./HubUsage";
@@ -24,6 +27,7 @@ interface Key {
   telegram: string | null;
   color: string;
   claude: boolean;
+  gemini: boolean;
   blancvpn: boolean;
   admin: boolean;
   key: string;
@@ -36,6 +40,14 @@ interface Key {
   daily: { date: string; cost: number }[];
   models: { model: string; cost: number; requests: number }[];
   week_limit: number;
+  gemini_usage: GeminiUsage;
+}
+
+interface GeminiUsage {
+  today: GeminiTotals;
+  week: GeminiTotals;
+  month: GeminiTotals;
+  total: GeminiTotals;
 }
 
 interface Overview {
@@ -45,6 +57,7 @@ interface Overview {
   week: Totals;
   today: Totals;
   daily: { date: string; cost: number }[];
+  gemini: GeminiUsage;
 }
 
 function origin() {
@@ -57,7 +70,7 @@ export function HubAdmin({ hub }: { hub: string }) {
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState("");
   const [telegram, setTelegram] = useState("");
-  const [access, setAccess] = useState({ claude: true, blancvpn: false });
+  const [access, setAccess] = useState({ claude: true, gemini: false, blancvpn: false });
   const [created, setCreated] = useState<{ name: string; key: string } | null>(null);
   const [open, setOpen] = useState<number | null>(null);
 
@@ -120,7 +133,7 @@ export function HubAdmin({ hub }: { hub: string }) {
       if (next === null) return;
       return call(`keys/${k.id}/update`, "POST", { telegram: next.trim() });
     }
-    if (action === "color" || action === "claude" || action === "blancvpn") {
+    if (action === "color" || action === "claude" || action === "gemini" || action === "blancvpn") {
       return call(`keys/${k.id}/update`, "POST", { [action]: value });
     }
     if (action === "delete") return call(`keys/${k.id}`, "DELETE");
@@ -151,6 +164,8 @@ export function HubAdmin({ hub }: { hub: string }) {
           по всему аккаунту, включая работу без хаба.
         </p>
       </section>
+
+      <GeminiSection keys={data.keys} total={data.gemini} />
 
       <section className="section">
         <h2 className="section-title">Новый ключ</h2>
@@ -193,9 +208,9 @@ export function HubAdmin({ hub }: { hub: string }) {
           <div className="latest latest-claude">
             <p className="latest-label">Ключ для {created.name}</p>
             <p className="step-note">Личная ссылка: вход на сайт, лимиты, расход и инструкция.</p>
-            <div className="admin-link">{keyPageUrl(origin(), created.key, access.claude)}</div>
+            <div className="admin-link">{keyPageUrl(origin(), created.key, access)}</div>
             <div className="latest-meta">
-              <CopyButton value={keyPageUrl(origin(), created.key, access.claude)} label="Копировать ссылку" />
+              <CopyButton value={keyPageUrl(origin(), created.key, access)} label="Копировать ссылку" />
               <CopyButton value={setupCommand(hub, created.key)} label="Копировать команду установки" />
             </div>
           </div>
@@ -226,10 +241,11 @@ export function HubAdmin({ hub }: { hub: string }) {
   );
 }
 
-type Action = "revoke" | "restore" | "delete" | "rename" | "telegram" | "color" | "claude" | "blancvpn";
+type Action = "revoke" | "restore" | "delete" | "rename" | "telegram" | "color" | "claude" | "gemini" | "blancvpn";
 
 const SERVICES = [
   ["claude", "Claude"],
+  ["gemini", "Gemini"],
   ["blancvpn", "BlancVPN"],
 ] as const;
 
@@ -278,6 +294,12 @@ function KeyRow({
           <StatRow today={k.today} week={k.week} total={k.total} />
           <DailyChart daily={k.daily} />
           <ModelList models={k.models} />
+          {(k.gemini || k.gemini_usage.total.requests > 0) && (
+            <p className="admin-meta">
+              Gemini: {money(k.gemini_usage.month.cost)} за 30 дней · {minutes(k.gemini_usage.month.minutes)} ·{" "}
+              {ago(k.gemini_usage.total.last_used_at)}
+            </p>
+          )}
           <p className="admin-meta">
             {k.key_hint} · создан {when(k.created_at)}
             {k.admin && " · админ"}
@@ -302,7 +324,7 @@ function KeyRow({
           <div className="hub-actions">
             {!k.revoked_at && (
               <>
-                <CopyButton value={keyPageUrl(origin(), k.key, k.claude)} label="Ссылка" />
+                <CopyButton value={keyPageUrl(origin(), k.key, k)} label="Ссылка" />
                 <CopyButton value={setupCommand(hub, k.key)} label="Команда установки" />
                 <CopyButton value={usageCommand(hub, k.key)} label="Команда расхода" />
                 <CopyButton value={k.key} label="Ключ" />
@@ -332,5 +354,47 @@ function KeyRow({
         </div>
       )}
     </li>
+  );
+}
+
+/** Gemini through the shared Google key: the total, then who spent how much over 30 days. */
+function GeminiSection({ keys, total }: { keys: Key[]; total: GeminiUsage }) {
+  const users = keys
+    .filter((k) => k.gemini || k.gemini_usage.total.requests > 0)
+    .sort((a, b) => b.gemini_usage.month.cost - a.gemini_usage.month.cost || a.name.localeCompare(b.name));
+  const max = Math.max(...users.map((k) => k.gemini_usage.month.cost), 0);
+  return (
+    <section className="section">
+      <h2 className="section-title">Gemini · Ciao</h2>
+      <GeminiStats usage={total} />
+      {users.length === 0 ? (
+        <p className="step-note">Ни у одного ключа нет Gemini: включите его в карточке ключа.</p>
+      ) : (
+        <ul className="gemini-users">
+          {users.map((k) => {
+            const m = k.gemini_usage.month;
+            return (
+              <li key={k.id}>
+                <Avatar name={k.name} telegram={k.telegram ?? undefined} color={k.color} />
+                <span className="gemini-user">
+                  <span className="gemini-user-head">
+                    <span className="admin-name">{k.name}</span>
+                    <span>{money(m.cost)}</span>
+                  </span>
+                  <span className="gemini-bar">
+                    <i style={{ width: max > 0 ? `${(m.cost / max) * 100}%` : 0, background: k.color }} />
+                  </span>
+                  <span className="admin-meta">
+                    {minutes(m.minutes)} за 30 дней · {ago(k.gemini_usage.total.last_used_at)}
+                    {!k.gemini && " · доступ выключен"}
+                  </span>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <p className="step-note">Оценка по минутам звука: диктовка — $0.009 за минуту, файл — $0.005.</p>
+    </section>
   );
 }
