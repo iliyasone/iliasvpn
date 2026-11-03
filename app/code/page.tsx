@@ -2,7 +2,7 @@ import { Topbar } from "@/components/Topbar";
 import { CodeBlock } from "@/components/CodeBlock";
 import { Collapsible } from "@/components/Collapsible";
 import { CopyButton } from "@/components/CopyButton";
-import { DailyChart, LimitBars, ModelList, StatRow, ago } from "@/components/HubUsage";
+import { DailyChart, KeyLimit, LimitBars, ModelList, StatRow, ago } from "@/components/HubUsage";
 import { HUB_URL, currentHubKey } from "@/lib/hub";
 import { settingsSnippet, setupCommand, usageCommand } from "@/lib/hub-setup";
 
@@ -48,6 +48,7 @@ export default async function CodePage({
           <section className="section">
             <h2 className="section-title">Расход</h2>
             <LimitBars limits={me.limits} />
+            <KeyLimit share={me.key.week_limit} limits={me.limits} />
             <StatRow today={me.key.today} week={me.key.week} total={me.key.total} />
             <DailyChart daily={me.key.daily} />
             <Collapsible title="По моделям за неделю">
