@@ -5,7 +5,8 @@ import {
   isCategory,
 } from "@/lib/imap";
 import { getLoginEmail } from "@/lib/config";
-import { currentInvite } from "@/lib/session";
+import { serviceOf } from "@/lib/access";
+import { currentViewer, viewerCan } from "@/lib/session";
 import { recordVisit } from "@/lib/visit";
 
 export const runtime = "nodejs";
@@ -20,12 +21,12 @@ export async function GET(request: Request) {
     );
   }
 
-  const invite = await currentInvite();
-  if (!invite) {
+  const viewer = await currentViewer();
+  if (!viewerCan(viewer, serviceOf(category))) {
     return NextResponse.json({ error: "Нет доступа.", code: "NO_ACCESS" }, { status: 401 });
   }
-  if (category !== "news") {
-    await recordVisit(invite, category).catch((err) => console.error("[api/messages] visit", err));
+  if (viewer?.kind === "invite" && category !== "news") {
+    await recordVisit(viewer.invite, category).catch((err) => console.error("[api/messages] visit", err));
   }
 
   try {

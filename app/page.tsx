@@ -1,23 +1,26 @@
 import Link from "next/link";
+import { Topbar } from "@/components/Topbar";
+import { currentViewer, viewerCan } from "@/lib/session";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const viewer = await currentViewer();
+  const show = (s: "blancvpn" | "claude") => !viewer || viewerCan(viewer, s);
+
   return (
     <div className="container">
-      <div className="topbar">
-        <span className="wordmark">iliasvpn</span>
-      </div>
+      <Topbar />
 
       <div className="home-grid">
-        <Link href="/blancvpn" className="home-card home-card-blanc">
-          <img src="/logos/blancvpn.png" alt="BlancVPN" />
-        </Link>
-        <Link href="/claude" className="home-card home-card-claude">
-          <img src="/logos/claude.png" alt="Claude" />
-        </Link>
-        <Link href="/code" className="home-card home-card-code">
-          <span>Claude Code</span>
-          <span className="admin-meta">ключ и расход</span>
-        </Link>
+        {show("blancvpn") && (
+          <Link href="/blancvpn" className="home-card home-card-blanc">
+            <img src="/logos/blancvpn.png" alt="BlancVPN" />
+          </Link>
+        )}
+        {show("claude") && (
+          <Link href="/claude" className="home-card home-card-claude">
+            <img src="/logos/claude.png" alt="Claude" />
+          </Link>
+        )}
       </div>
     </div>
   );

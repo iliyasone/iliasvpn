@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { isTokenShaped } from "@/lib/access";
+import { SERVICES, TELEGRAM_RE, isTokenShaped, type Service } from "@/lib/access";
+import { telegramProfile } from "@/lib/telegram-profile";
 import {
   AccessStoreError,
   createInvite,
@@ -7,6 +8,7 @@ import {
   deleteInvite,
   restoreInvite,
   revokeInvite,
+  setAccess,
 } from "@/lib/access-store";
 import { isAdmin } from "@/lib/session";
 
@@ -39,14 +41,23 @@ export async function GET() {
 
 export async function POST(request: Request) {
   if (!(await isAdmin())) return denied();
-  const body = (await request.json().catch(() => ({}))) as { name?: unknown };
-  const name =
+  const body = (await request.json().catch(() => ({}))) as { name?: unknown; access?: unknown };
+  let name =
     typeof body.name === "string" ? body.name.replace(/\s+/g, " ").trim().slice(0, 64) : "";
   if (name.length < 1) {
-    return NextResponse.json({ error: "Нужно имя." }, { status: 400 });
+    return NextResponse.json({ error: "Нужен @ник в Telegram или имя." }, { status: 400 });
   }
+  // "@username" or a t.me link → remember the username and take the display name from Telegram.
+  const handle = name.replace(/^(https?:\/\/)?t\.me\//, "@").match(/^@([A-Za-z0-9_]{4,32})$/)?.[1];
+  let telegram: string | undefined;
+  if (handle && TELEGRAM_RE.test(handle)) {
+    telegram = handle;
+    name = (await telegramProfile(handle)).name ?? `@${handle}`;
+  }
+  const raw = (body.access ?? {}) as Partial<Record<Service, unknown>>;
+  const access = Object.fromEntries(SERVICES.map((s) => [s, raw[s] === true])) as Record<Service, boolean>;
   try {
-    const { token, entry } = await createInvite(name);
+    const { token, entry } = await createInvite(name, telegram, access);
     return NextResponse.json({ token, entry });
   } catch (err) {
     return failed(err);
@@ -58,6 +69,8 @@ export async function PATCH(request: Request) {
   const body = (await request.json().catch(() => ({}))) as {
     token?: unknown;
     action?: unknown;
+    service?: unknown;
+    allowed?: unknown;
   };
   if (!isTokenShaped(body.token)) {
     return NextResponse.json({ error: "Плохой токен." }, { status: 400 });
@@ -67,6 +80,8 @@ export async function PATCH(request: Request) {
     if (body.action === "revoke") ok = await revokeInvite(body.token);
     else if (body.action === "restore") ok = await restoreInvite(body.token);
     else if (body.action === "delete") ok = await deleteInvite(body.token);
+    else if (body.action === "access" && SERVICES.includes(body.service as Service) && typeof body.allowed === "boolean")
+      ok = await setAccess(body.token, body.service as Service, body.allowed);
     else return NextResponse.json({ error: "Неизвестное действие." }, { status: 400 });
     if (!ok) return NextResponse.json({ error: "Не найдено." }, { status: 404 });
     return NextResponse.json({ ok: true });

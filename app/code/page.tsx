@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Topbar } from "@/components/Topbar";
 import { CodeBlock } from "@/components/CodeBlock";
 import { Collapsible } from "@/components/Collapsible";
 import { CopyButton } from "@/components/CopyButton";
@@ -18,12 +18,7 @@ export default async function CodePage({
 
   return (
     <div className="container">
-      <div className="topbar">
-        <Link href="/" className="back">
-          ← Назад
-        </Link>
-        <span className="wordmark">iliasvpn · Claude Code</span>
-      </div>
+      <Topbar back="/" title="iliasvpn · Claude Code" />
 
       {!me ? (
         <section className="section">

@@ -1,8 +1,15 @@
 import { get } from "@vercel/edge-config";
 
+import type { Service } from "./services";
+export { SERVICES, canUse, type Service } from "./services";
+
 /** One invite: a personal token that maps to the person you gave it to. */
 export interface AccessEntry {
   name: string;
+  /** Telegram username without "@", used for the avatar. */
+  telegram?: string;
+  /** Per-service access; a missing key means allowed (invites made before this field). */
+  access?: Partial<Record<Service, boolean>>;
   createdAt: string;
   revokedAt?: string;
   firstSeenAt?: string;
@@ -43,6 +50,13 @@ export async function resolveToken(
   if (!entry || entry.revokedAt) return null;
   return { ...entry, token };
 }
+
+/** Which service a mail category belongs to. */
+export function serviceOf(category: string): Service {
+  return category === "claude" ? "claude" : "blancvpn";
+}
+
+export const TELEGRAM_RE = /^[A-Za-z0-9_]{4,32}$/;
 
 export function isAdminCookie(value: string | undefined): boolean {
   const expected = process.env.ADMIN_TOKEN?.trim();

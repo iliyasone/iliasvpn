@@ -4,6 +4,8 @@ import {
   ImapConfigError,
   isCategory,
 } from "@/lib/imap";
+import { serviceOf } from "@/lib/access";
+import { currentViewer, viewerCan } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +20,9 @@ export async function GET(request: Request) {
   }
   if (!Number.isInteger(uid) || uid <= 0) {
     return NextResponse.json({ error: "Invalid uid." }, { status: 400 });
+  }
+  if (!viewerCan(await currentViewer(), serviceOf(category))) {
+    return NextResponse.json({ error: "Нет доступа.", code: "NO_ACCESS" }, { status: 401 });
   }
 
   try {

@@ -1,3 +1,4 @@
+import { Topbar } from "@/components/Topbar";
 import Link from "next/link";
 import { AdminPanel } from "@/components/AdminPanel";
 import { HubAdmin } from "@/components/HubAdmin";
@@ -18,12 +19,7 @@ export default async function AdminPage({
 
   return (
     <div className="container">
-      <div className="topbar">
-        <Link href="/" className="back">
-          ← Назад
-        </Link>
-        <span className="wordmark">iliasvpn · admin</span>
-      </div>
+      <Topbar back="/" title="iliasvpn · admin" />
 
       {admin ? (
         <>

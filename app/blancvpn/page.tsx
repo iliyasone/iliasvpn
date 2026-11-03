@@ -1,26 +1,22 @@
-import Link from "next/link";
 import { InstallButtons } from "@/components/InstallButtons";
 import { EmailChip } from "@/components/EmailChip";
 import { Collapsible } from "@/components/Collapsible";
 import { Inbox } from "@/components/Inbox";
 import { Locked } from "@/components/Locked";
-import { currentInvite } from "@/lib/session";
+import { currentViewer, viewerCan } from "@/lib/session";
+import { Topbar } from "@/components/Topbar";
 import { getLoginEmail } from "@/lib/config";
 
 export default async function BlancVpnPage() {
-  if (!(await currentInvite())) {
-    return <Locked logo="/logos/blancvpn.png" alt="BlancVPN" />;
+  const viewer = await currentViewer();
+  if (!viewerCan(viewer, "blancvpn")) {
+    return <Locked logo="/logos/blancvpn.png" alt="BlancVPN" signedIn={Boolean(viewer)} />;
   }
   const email = getLoginEmail();
 
   return (
     <div className="container">
-      <div className="topbar">
-        <Link href="/" className="back">
-          ← Назад
-        </Link>
-        <span className="wordmark">iliasvpn</span>
-      </div>
+      <Topbar back="/" />
 
       <div className="flow-head">
         <img src="/logos/blancvpn.png" alt="BlancVPN" />
