@@ -62,14 +62,14 @@ export async function GeminiPage({ me }: { me: HubMe }) {
           </li>
           <li className="step">
             <div className="step-body">
-              <p className="step-lead">Ciao → Настройки → Google Gemini → «Использовать»</p>
-              <p className="step-note">На Android: Настройки → Сервис → Gemini.</p>
+              <p className="step-lead">Ciao → Настройки → «Кто распознаёт» → Google Gemini → «Использовать»</p>
+              <p className="step-note">На Android — выберите Google Gemini в том же разделе.</p>
             </div>
           </li>
           <li className="step">
             <div className="step-body">
-              <p className="step-lead">Вставьте ссылку в поле «Сервер» и нажмите «Сохранить»</p>
-              <p className="step-note">Ключ Google не нужен: Ciao будет ходить в Gemini через этот сервер.</p>
+              <p className="step-lead">Вставьте ссылку в поле «API-ключ» и нажмите «Сохранить»</p>
+              <p className="step-note">На Android — в поле «Ключ Gemini API», сохраняется само. Ключ Google не нужен: Ciao будет ходить в Gemini через этот сервер.</p>
             </div>
           </li>
           <li className="step">
