@@ -69,6 +69,17 @@ interface Overview {
   gemini: GeminiUsage;
 }
 
+/** One weekly-limit week: the account limit used per Moscow day, split by key (id null: a deleted key). */
+interface Week {
+  start: number;
+  reset: number;
+  /** Already used when the hub first saw the week (usage before the hub). */
+  baseline: number | null;
+  /** Last value the hub saw. */
+  utilization: number | null;
+  days: { date: string; keys: { id: number | null; share: number; cost: number }[] }[];
+}
+
 /** Spend of one person or key, Claude and Gemini together. */
 interface Spend {
   today: number;
@@ -151,6 +162,7 @@ function shortDate(date: string) {
 
 export function HubAdmin({ hub }: { hub: string }) {
   const [data, setData] = useState<Overview | null>(null);
+  const [weeks, setWeeks] = useState<Week[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState<number | null>(null);
@@ -166,6 +178,8 @@ export function HubAdmin({ hub }: { hub: string }) {
     if (!res.ok) return setError(body.error ?? `Ошибка ${res.status}`);
     setError(null);
     setData(body as Overview);
+    const w = await fetch("/api/hub/admin/weeks", { cache: "no-store" }).catch(() => null);
+    if (w?.ok) setWeeks(((await w.json()) as { weeks: Week[] }).weeks);
   }, []);
 
   useEffect(() => {
@@ -247,8 +261,8 @@ export function HubAdmin({ hub }: { hub: string }) {
         </section>
 
         <section className="section">
-          <h2 className="section-title">По дням</h2>
-          <PeopleByDay people={everyone} account={data.daily} />
+          <h2 className="section-title">Недельный лимит по дням</h2>
+          {weeks && weeks.length > 0 ? <WeekByDay people={everyone} weeks={weeks} /> : <p className="admin-meta">Хаб ещё не видел лимит.</p>}
         </section>
       </div>
 
@@ -336,74 +350,150 @@ function Stat({ label, claude, gemini }: { label: string; claude: number; gemini
   );
 }
 
+const MSK = "Europe/Moscow";
+
+function weekday(date: string) {
+  return new Date(`${date}T12:00:00+03:00`).toLocaleDateString("ru-RU", { weekday: "short", timeZone: MSK });
+}
+
+function moment(ts: number) {
+  return new Date(ts * 1000).toLocaleString("ru-RU", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: MSK,
+  });
+}
+
+function time(ts: number) {
+  return new Date(ts * 1000).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", timeZone: MSK });
+}
+
+function mskDate(ts: number) {
+  return new Date(ts * 1000).toLocaleDateString("sv-SE", { timeZone: MSK });
+}
+
 /**
- * Spend per day for the last 30 days, each bar split by person color; a click on a day lists who spent
- * how much that day. Leading days before the first spend are dropped.
+ * Part of the account weekly limit used each day of a week, each bar split by person color, with arrows to
+ * past weeks. Bars share one scale across weeks; the dashed line is an even pace, 1/7 of the limit a day.
+ * A click on a day lists who used how much that day.
  */
-function PeopleByDay({ people, account }: { people: Person[]; account: Day[] }) {
-  const days = account.map((d) => d.date);
-  const totals = account.map(dayTotal);
-  // Spend of keys that were deleted since: in the account total, under no person.
-  const gone = account.map((d, i) => Math.max(0, totals[i] - people.reduce((s, p) => s + p.spend.daily[i].cost, 0)));
-  const rows = [
-    ...people.map((p) => ({ id: p.main.id, name: p.main.name, color: p.main.color, daily: p.spend.daily.map((d) => d.cost) })),
-    { id: -1, name: "Удалённые ключи", color: "var(--rest)", daily: gone.map((c) => (c >= 0.005 ? c : 0)) },
-  ];
-  const shown = fromFirstSpend(
-    days.map((date, i) => ({ date, i, total: totals[i] })),
-    (d) => d.total,
-  );
+function WeekByDay({ people, weeks }: { people: Person[]; weeks: Week[] }) {
+  const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
-  const sel = picked ?? days.length - 1;
-  const max = Math.max(...shown.map((d) => d.total), 0);
-  if (days.length === 0) return null;
-  const who = rows
-    .map((p) => ({ p, cost: p.daily[sel] }))
-    .filter((x) => x.cost > 0)
-    .sort((a, b) => b.cost - a.cost);
+  const week = weeks[Math.min(index, weeks.length - 1)];
+  const now = Date.now() / 1000;
+  const today = mskDate(now);
+
+  const owner = new Map<number, Person>();
+  for (const p of people) for (const k of p.keys) owner.set(k.id, p);
+  const rows = (d: Week["days"][number]) => {
+    const by = new Map<number, { id: number; name: string; color: string; share: number; cost: number }>();
+    for (const k of d.keys) {
+      const p = k.id === null ? undefined : owner.get(k.id);
+      const id = p ? p.main.id : -1;
+      const row = by.get(id) ?? { id, name: p ? p.main.name : "Удалённые ключи", color: p ? p.main.color : "var(--rest)", share: 0, cost: 0 };
+      row.share += k.share;
+      row.cost += k.cost;
+      by.set(id, row);
+    }
+    return [...by.values()].sort((a, b) => b.share - a.share || b.cost - a.cost);
+  };
+  const total = (d: Week["days"][number]) => d.keys.reduce((s, k) => s + k.share, 0);
+  const pace = 1 / 7;
+  // Room above the tallest bar for its label.
+  const scale = Math.max(pace, ...weeks.flatMap((w) => w.days.map(total))) * 1.2;
+
+  const days = week.days;
+  const todayIndex = days.findIndex((d) => d.date === today);
+  const busiest = days.reduce((best, d, i) => (total(d) > total(days[best]) ? i : best), 0);
+  const sel = picked ?? (todayIndex >= 0 ? todayIndex : busiest);
+  const go = (i: number) => {
+    setIndex(i);
+    setPicked(null);
+  };
+  const who = rows(days[sel]).filter((r) => r.share > 0 || r.cost > 0);
+  const current = week.reset > now;
+
   return (
     <div className="byday">
-      <div className="chart-bars byday-bars">
-        {shown.map((d) => (
-          <button
-            key={d.date}
-            type="button"
-            className={`chart-col byday-col${d.i === sel ? " byday-col-on" : ""}`}
-            onClick={() => setPicked(d.i)}
-            title={`${shortDate(d.date)}: ${money(d.total)}`}
-          >
-            <span className="byday-stack" style={{ height: max > 0 ? `${(d.total / max) * 100}%` : 0 }}>
-              {rows.map((p) => {
-                const c = p.daily[d.i];
-                return c > 0 ? (
-                  <i key={p.id} title={`${p.name}: ${money(c)}`} style={{ flexGrow: c, background: p.color }} />
-                ) : null;
-              })}
-            </span>
-          </button>
+      <div className="weeknav">
+        <button type="button" className="chip chip-small" disabled={index >= weeks.length - 1} onClick={() => go(index + 1)} aria-label="Неделя раньше">
+          ‹
+        </button>
+        <span className="weeknav-label">
+          <b>
+            {shortDate(mskDate(week.start))} – {shortDate(mskDate(week.reset))}
+          </b>
+          <span className="admin-meta">
+            {current ? "эта неделя" : "прошла"} · использовано <b className="weeknav-used">{pct(week.utilization ?? 0)}</b>
+          </span>
+        </span>
+        <button type="button" className="chip chip-small" disabled={index === 0} onClick={() => go(index - 1)} aria-label="Неделя позже">
+          ›
+        </button>
+      </div>
+      <div className="chart-bars byday-bars weekbars">
+        <span className="weekbars-pace" style={{ bottom: `${(pace / scale) * 100}%` }} title="Ровный темп: 1/7 лимита в день" />
+        {days.map((d, i) => {
+          const t = total(d);
+          return (
+            <button
+              key={d.date}
+              type="button"
+              className={`chart-col byday-col${i === sel ? " byday-col-on" : ""}${current && d.date > today ? " weekbars-future" : ""}`}
+              onClick={() => setPicked(i)}
+              title={`${shortDate(d.date)}: ${pct(t)} лимита`}
+            >
+              {t > 0 && <span className="weekbars-value">{pct(t)}</span>}
+              <span className="byday-stack" style={{ height: `${(t / scale) * 100}%` }}>
+                {rows(d).map((r) =>
+                  r.share > 0 ? <i key={r.id} title={`${r.name}: ${pct(r.share)}`} style={{ flexGrow: r.share / t, background: r.color }} /> : null,
+                )}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="weekbars-days">
+        {days.map((d, i) => (
+          <span key={d.date} className={i === sel ? "weekbars-day-on" : ""}>
+            {weekday(d.date)}
+            <br />
+            {d.date.slice(8)}
+            {i === 0 && time(week.start) !== "00:00" && <small>с {time(week.start)}</small>}
+            {i === days.length - 1 && time(week.reset) !== "00:00" && <small>до {time(week.reset)}</small>}
+          </span>
         ))}
       </div>
-      <div className="chart-axis">
-        <span>{shown.length ? shortDate(shown[0].date) : ""}</span>
-        <span>макс. {money(max)} в день</span>
-        <span>сегодня</span>
-      </div>
+      <p className="admin-meta weekbars-note">
+        Пунктир — ровный темп, {pct(pace)} лимита в день.
+        <br />
+        Сброс {moment(week.reset)}
+        {week.baseline ? `; до хаба уже было ${pct(week.baseline)}` : ""}.
+      </p>
       <div className="byday-list">
         <p className="byday-title">
-          <span>{sel === days.length - 1 ? "Сегодня" : shortDate(days[sel])}</span>
-          <span>{money(totals[sel])}</span>
+          <span>
+            {dayTitle(days[sel].date, today)}
+          </span>
+          <span>{pct(total(days[sel]))} лимита</span>
         </p>
         {who.length === 0 ? (
-          <p className="admin-meta">Расходов не было.</p>
+          <p className="admin-meta">{current && days[sel].date > today ? "Этот день ещё впереди." : "Запросов не было."}</p>
         ) : (
           <ul className="split">
-            {who.map(({ p, cost }) => (
-              <li key={p.id}>
+            {who.map((r) => (
+              <li key={r.id}>
                 <span>
-                  <i className="dot" style={{ background: p.color }} />
-                  {p.name}
+                  <i className="dot" style={{ background: r.color }} />
+                  {r.name}
                 </span>
-                <span>{money(cost)}</span>
+                <span>
+                  {pct(r.share)} <span className="admin-meta">· {money(r.cost)}</span>
+                </span>
               </li>
             ))}
           </ul>
@@ -411,6 +501,10 @@ function PeopleByDay({ people, account }: { people: Person[]; account: Day[] }) 
       </div>
     </div>
   );
+}
+
+function dayTitle(date: string, today: string) {
+  return date === today ? "Сегодня" : `${weekday(date)}, ${shortDate(date)}`;
 }
 
 const SERVICES = [

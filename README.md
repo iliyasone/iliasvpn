@@ -85,8 +85,9 @@ redirect to `/claude?key=…`.
   `https://gemini.sheetlife.app/?key=<key>` (the Gemini proxy in claude-hub).
 - `/blancvpn` — install, login by code, BlancVPN emails.
 - `/admin` (admin keys only) — spend today, over 7 days and all time (Claude and
-  Gemini), the weekly limit split by person, spend per day by person (pick a day to
-  see who spent what), and the list of people sorted by spend. A person can own
+  Gemini), the weekly limit split by person, the part of the weekly limit used each
+  day by person, for this week and past ones (pick a day to see who used what), and
+  the list of people sorted by spend. A person can own
   several keys (their machines and agents) whose spend adds up. Per key: name and
   Telegram edited in place, whose key it is, color, access, links, revoke, delete.
 
