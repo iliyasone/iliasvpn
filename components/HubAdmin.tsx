@@ -125,14 +125,18 @@ function spendOf(keys: Key[]): Spend {
   };
 }
 
-/** Active keys grouped by person: a key with an owner goes under that owner's key. */
+/** Keys grouped by person: a key with an owner goes under that owner's key. Revoked keys keep their spend there. */
 function people(keys: Key[]): Person[] {
-  const active = keys.filter((k) => !k.revoked_at);
-  const mains = active.filter((k) => !k.owner || !active.some((o) => o.id === k.owner && !o.owner));
+  const mains = keys.filter((k) => !k.owner || !keys.some((o) => o.id === k.owner && !o.owner));
   return mains.map((main) => {
-    const own = [main, ...active.filter((k) => k.owner === main.id && k.id !== main.id)];
+    const own = [main, ...keys.filter((k) => k.owner === main.id && k.id !== main.id)];
     return { main, keys: own, spend: spendOf(own) };
   });
+}
+
+/** A person whose every key is revoked. */
+function isRevoked(p: Person) {
+  return p.keys.every((k) => k.revoked_at);
 }
 
 /** Days from the first one with spend (at least the last 7). */
@@ -206,13 +210,14 @@ export function HubAdmin({ hub }: { hub: string }) {
     return <p className={error ? "admin-error" : "step-note"}>{error ?? "Загружаю…"}</p>;
   }
 
-  const all = people(data.keys).sort(
+  const everyone = people(data.keys).sort(
     (a, b) => b.spend[sort] - a.spend[sort] || b.spend.total - a.spend.total || a.main.name.localeCompare(b.main.name),
   );
+  const all = everyone.filter((p) => !isRevoked(p));
   const used = all.filter((p) => p.spend.total > 0);
   const idle = all.filter((p) => p.spend.total === 0);
-  const revoked = data.keys.filter((k) => k.revoked_at);
-  const mains = all.map((p) => p.main);
+  const revoked = everyone.filter(isRevoked);
+  const mains = all.map((p) => p.main).filter((k) => !k.revoked_at);
   const g = data.gemini;
 
   const rowProps = { hub, busy, mains, onUpdate: update, onAct: act };
@@ -233,7 +238,7 @@ export function HubAdmin({ hub }: { hub: string }) {
           </div>
           <WeekBar
             limits={data.limits}
-            segments={all
+            segments={everyone
               .filter((p) => p.spend.weekLimit > 0)
               .map((p) => ({ label: p.main.name, color: p.main.color, value: p.spend.weekLimit }))}
             restLabel={data.week_baseline === null ? "Без хаба" : "До хаба и мимо него"}
@@ -243,7 +248,7 @@ export function HubAdmin({ hub }: { hub: string }) {
 
         <section className="section">
           <h2 className="section-title">По дням</h2>
-          <PeopleByDay people={all} />
+          <PeopleByDay people={everyone} />
         </section>
       </div>
 
@@ -303,14 +308,8 @@ export function HubAdmin({ hub }: { hub: string }) {
             </button>
             {showRevoked && (
               <ul className={`hub-list sort-${sort}`}>
-                {revoked.map((k) => (
-                  <PersonRow
-                    key={k.id}
-                    p={{ main: k, keys: [k], spend: spendOf([k]) }}
-                    open={open === k.id}
-                    onToggle={() => setOpen(open === k.id ? null : k.id)}
-                    {...rowProps}
-                  />
+                {revoked.map((p) => (
+                  <PersonRow key={p.main.id} p={p} open={open === p.main.id} onToggle={() => setOpen(open === p.main.id ? null : p.main.id)} {...rowProps} />
                 ))}
               </ul>
             )}
@@ -502,7 +501,7 @@ interface RowProps {
 
 function PersonRow({ p, open, onToggle, ...props }: RowProps & { p: Person; open: boolean; onToggle: () => void }) {
   const { main, spend } = p;
-  const revoked = Boolean(main.revoked_at);
+  const revoked = isRevoked(p);
   const meta = [
     main.telegram && `@${main.telegram}`,
     revoked ? `отозван ${when(main.revoked_at)}` : ago(spend.last),
@@ -620,6 +619,7 @@ function KeyCard({ k, person, hub, busy, mains, onUpdate, onAct }: RowProps & { 
           <span className="admin-meta">
             {k.key_hint} · создан {when(k.created_at)}
             {k.admin && " · админ"}
+            {k.revoked_at && ` · отозван ${when(k.revoked_at)}`}
           </span>
         </span>
         {person.keys.length > 1 && (
