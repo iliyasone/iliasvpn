@@ -13,7 +13,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     return <Locked signedIn={Boolean(viewer)} bad={Boolean(bad)} />;
   }
   return (
-    <div className="container">
+    <div className="container container-wide">
       <Topbar back="/" title="iliasvpn · admin" />
       <HubAdmin hub={HUB_URL} />
     </div>

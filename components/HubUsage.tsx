@@ -55,13 +55,21 @@ export interface Segment {
   value: number;
 }
 
-const REST_COLOR = "#c9cbd0";
+const REST_COLOR = "var(--rest)";
 
 /**
  * The account's weekly limit as one bar: a colored part per key (estimated from requests
  * through the hub), the rest of the used part in gray, and what is left.
  */
-export function WeekBar({ limits, segments, restLabel }: { limits: Limit[]; segments: Segment[]; restLabel: string }) {
+export function WeekBar({
+  limits,
+  segments,
+  restLabel,
+}: {
+  limits: Limit[];
+  segments: Segment[];
+  restLabel: string;
+}) {
   const week = limits.find((l) => l.window === "7d");
   if (!week) {
     return <p className="step-note">Лимиты появятся после первого запроса через хаб.</p>;
