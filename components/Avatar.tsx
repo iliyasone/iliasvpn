@@ -27,7 +27,7 @@ export function Avatar({
         width: size,
         height: size,
         fontSize: size * 0.4,
-        ...(color ? { background: color, color: "#fff", boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${color}` } : {}),
+        ...(color ? { background: color, color: "#fff", boxShadow: `0 0 0 2px var(--bg), 0 0 0 4px ${color}` } : {}),
       }}
     >
       {telegram && !failed ? (
