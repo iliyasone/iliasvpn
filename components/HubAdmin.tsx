@@ -217,7 +217,7 @@ export function HubAdmin({ hub }: { hub: string }) {
   const used = all.filter((p) => p.spend.total > 0);
   const idle = all.filter((p) => p.spend.total === 0);
   const revoked = everyone.filter(isRevoked);
-  const mains = all.map((p) => p.main).filter((k) => !k.revoked_at);
+  const mains = all.map((p) => p.main);
   const g = data.gemini;
 
   const rowProps = { hub, busy, mains, onUpdate: update, onAct: act };
@@ -248,7 +248,7 @@ export function HubAdmin({ hub }: { hub: string }) {
 
         <section className="section">
           <h2 className="section-title">По дням</h2>
-          <PeopleByDay people={everyone} />
+          <PeopleByDay people={everyone} account={data.daily} />
         </section>
       </div>
 
@@ -340,9 +340,15 @@ function Stat({ label, claude, gemini }: { label: string; claude: number; gemini
  * Spend per day for the last 30 days, each bar split by person color; a click on a day lists who spent
  * how much that day. Leading days before the first spend are dropped.
  */
-function PeopleByDay({ people }: { people: Person[] }) {
-  const days = people[0]?.spend.daily.map((d) => d.date) ?? [];
-  const totals = days.map((_, i) => people.reduce((s, p) => s + p.spend.daily[i].cost, 0));
+function PeopleByDay({ people, account }: { people: Person[]; account: Day[] }) {
+  const days = account.map((d) => d.date);
+  const totals = account.map(dayTotal);
+  // Spend of keys that were deleted since: in the account total, under no person.
+  const gone = account.map((d, i) => Math.max(0, totals[i] - people.reduce((s, p) => s + p.spend.daily[i].cost, 0)));
+  const rows = [
+    ...people.map((p) => ({ id: p.main.id, name: p.main.name, color: p.main.color, daily: p.spend.daily.map((d) => d.cost) })),
+    { id: -1, name: "Удалённые ключи", color: "var(--rest)", daily: gone.map((c) => (c >= 0.005 ? c : 0)) },
+  ];
   const shown = fromFirstSpend(
     days.map((date, i) => ({ date, i, total: totals[i] })),
     (d) => d.total,
@@ -351,8 +357,8 @@ function PeopleByDay({ people }: { people: Person[] }) {
   const sel = picked ?? days.length - 1;
   const max = Math.max(...shown.map((d) => d.total), 0);
   if (days.length === 0) return null;
-  const who = people
-    .map((p) => ({ p, cost: p.spend.daily[sel].cost }))
+  const who = rows
+    .map((p) => ({ p, cost: p.daily[sel] }))
     .filter((x) => x.cost > 0)
     .sort((a, b) => b.cost - a.cost);
   return (
@@ -367,10 +373,10 @@ function PeopleByDay({ people }: { people: Person[] }) {
             title={`${shortDate(d.date)}: ${money(d.total)}`}
           >
             <span className="byday-stack" style={{ height: max > 0 ? `${(d.total / max) * 100}%` : 0 }}>
-              {people.map((p) => {
-                const c = p.spend.daily[d.i].cost;
+              {rows.map((p) => {
+                const c = p.daily[d.i];
                 return c > 0 ? (
-                  <i key={p.main.id} title={`${p.main.name}: ${money(c)}`} style={{ flexGrow: c, background: p.main.color }} />
+                  <i key={p.id} title={`${p.name}: ${money(c)}`} style={{ flexGrow: c, background: p.color }} />
                 ) : null;
               })}
             </span>
@@ -392,10 +398,10 @@ function PeopleByDay({ people }: { people: Person[] }) {
         ) : (
           <ul className="split">
             {who.map(({ p, cost }) => (
-              <li key={p.main.id}>
+              <li key={p.id}>
                 <span>
-                  <i className="dot" style={{ background: p.main.color }} />
-                  {p.main.name}
+                  <i className="dot" style={{ background: p.color }} />
+                  {p.name}
                 </span>
                 <span>{money(cost)}</span>
               </li>
@@ -517,7 +523,7 @@ function PersonRow({ p, open, onToggle, ...props }: RowProps & { p: Person; open
         </span>
         <span className="badges">
           {SERVICES.map(([s, label]) => (
-            <span key={s} className={`badge${p.keys.some((k) => k[s]) ? " badge-on" : ""}`}>
+            <span key={s} className={`badge${p.keys.some((k) => !k.revoked_at && k[s]) ? " badge-on" : ""}`}>
               {label}
             </span>
           ))}
