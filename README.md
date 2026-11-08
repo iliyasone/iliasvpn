@@ -84,8 +84,14 @@ redirect to `/claude?key=…`.
   from its latest release, and the one link to paste into Ciao:
   `https://gemini.sheetlife.app/?key=<key>` (the Gemini proxy in claude-hub).
 - `/blancvpn` — install, login by code, BlancVPN emails.
-- `/admin` (admin keys only) — the weekly limit split by key colors, Gemini
-  spend in total and per key, issue a key, and per key: color, access, Telegram, links, rename, revoke, delete.
+- `/admin` (admin keys only) — spend today, over 7 days and all time (Claude and
+  Gemini), the weekly limit split by person, spend per day by person (pick a day to
+  see who spent what), and the list of people sorted by spend. A person can own
+  several keys (their machines and agents) whose spend adds up. Per key: name and
+  Telegram edited in place, whose key it is, color, access, links, revoke, delete.
+
+The site follows the device's light or dark setting; the button in the header
+switches it and remembers the choice in a cookie.
 
 ### Visitor notifications
 
