@@ -403,6 +403,8 @@ function WeekByDay({ people, weeks }: { people: Person[]; weeks: Week[] }) {
     }
     return [...by.values()].sort((a, b) => b.share - a.share || b.cost - a.cost);
   };
+  // Stack in the order of the people list, so a person's color keeps its place from day to day.
+  const order = (id: number) => (id === -1 ? people.length : people.findIndex((p) => p.main.id === id));
   const total = (d: Week["days"][number]) => d.keys.reduce((s, k) => s + k.share, 0);
   const pace = 1 / 7;
   // Room above the tallest bar for its label.
@@ -438,7 +440,7 @@ function WeekByDay({ people, weeks }: { people: Person[]; weeks: Week[] }) {
         </button>
       </div>
       <div className="chart-bars byday-bars weekbars">
-        <span className="weekbars-pace" style={{ bottom: `${(pace / scale) * 100}%` }} title="Ровный темп: 1/7 лимита в день" />
+        <span className="weekbars-pace" style={{ bottom: `${(pace / scale) * 100}%` }} />
         {days.map((d, i) => {
           const t = total(d);
           return (
@@ -451,7 +453,7 @@ function WeekByDay({ people, weeks }: { people: Person[]; weeks: Week[] }) {
             >
               {t > 0 && <span className="weekbars-value">{pct(t)}</span>}
               <span className="byday-stack" style={{ height: `${(t / scale) * 100}%` }}>
-                {rows(d).map((r) =>
+                {rows(d).sort((a, b) => order(a.id) - order(b.id)).map((r) =>
                   r.share > 0 ? <i key={r.id} title={`${r.name}: ${pct(r.share)}`} style={{ flexGrow: r.share / t, background: r.color }} /> : null,
                 )}
               </span>
@@ -484,7 +486,7 @@ function WeekByDay({ people, weeks }: { people: Person[]; weeks: Week[] }) {
           <span>{pct(total(days[sel]))} лимита</span>
         </p>
         {who.length === 0 ? (
-          <p className="admin-meta">{current && days[sel].date > today ? "Этот день ещё впереди." : "Запросов не было."}</p>
+          <p className="admin-meta">{current && days[sel].date > today ? "Этот день ещё впереди." : "Хаб не видел запросов."}</p>
         ) : (
           <ul className="split">
             {who.map((r) => (
