@@ -381,9 +381,11 @@ function mskDate(ts: number) {
  * A click on a day lists who used how much that day.
  */
 function WeekByDay({ people, weeks }: { people: Person[]; weeks: Week[] }) {
-  const [index, setIndex] = useState(0);
+  // The week shown, by its reset time (null: the newest), so a new week arriving on refresh doesn't move it.
+  const [reset, setReset] = useState<number | null>(null);
   const [picked, setPicked] = useState<number | null>(null);
-  const week = weeks[Math.min(index, weeks.length - 1)];
+  const index = Math.max(0, weeks.findIndex((w) => w.reset === reset));
+  const week = weeks[index];
   const now = Date.now() / 1000;
   const today = mskDate(now);
 
@@ -409,9 +411,9 @@ function WeekByDay({ people, weeks }: { people: Person[]; weeks: Week[] }) {
   const days = week.days;
   const todayIndex = days.findIndex((d) => d.date === today);
   const busiest = days.reduce((best, d, i) => (total(d) > total(days[best]) ? i : best), 0);
-  const sel = picked ?? (todayIndex >= 0 ? todayIndex : busiest);
+  const sel = picked !== null && picked < days.length ? picked : todayIndex >= 0 ? todayIndex : busiest;
   const go = (i: number) => {
-    setIndex(i);
+    setReset(i === 0 ? null : weeks[i].reset);
     setPicked(null);
   };
   const who = rows(days[sel]).filter((r) => r.share > 0 || r.cost > 0);
@@ -428,7 +430,7 @@ function WeekByDay({ people, weeks }: { people: Person[]; weeks: Week[] }) {
             {shortDate(mskDate(week.start))} – {shortDate(mskDate(week.reset))}
           </b>
           <span className="admin-meta">
-            {current ? "эта неделя" : "прошла"} · использовано <b className="weeknav-used">{pct(week.utilization ?? 0)}</b>
+            {current ? "эта неделя" : "прошла"} · использовано <b className="weeknav-used">{week.utilization === null ? "нет данных" : pct(week.utilization)}</b>
           </span>
         </span>
         <button type="button" className="chip chip-small" disabled={index === 0} onClick={() => go(index - 1)} aria-label="Неделя позже">
