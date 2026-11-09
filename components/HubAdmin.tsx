@@ -7,6 +7,7 @@ import {
   DailyChart,
   LimitBars,
   WeekBar,
+  WeekModels,
   ModelList,
   ago,
   minutes,
@@ -62,6 +63,8 @@ interface Overview {
   keys: Key[];
   limits: Limit[];
   week_baseline: number | null;
+  /** Part of the weekly limit each model used this week. */
+  week_models?: { model: string; share: number }[];
   week: Totals;
   today: Totals;
   total: Totals;
@@ -257,6 +260,7 @@ export function HubAdmin({ hub }: { hub: string }) {
               .map((p) => ({ label: p.main.name, color: p.main.color, value: p.spend.weekLimit }))}
             restLabel={data.week_baseline === null ? "Без хаба" : "До хаба и мимо него"}
           />
+          <WeekModels models={data.week_models ?? []} />
           <LimitBars limits={data.limits} />
         </section>
 

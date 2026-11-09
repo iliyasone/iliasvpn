@@ -107,11 +107,42 @@ export function WeekBar({
   );
 }
 
+/**
+ * Part of the account weekly limit each model family (Opus, Fable…) used this week. An estimate, like the
+ * split by key: each rise of the limit goes to the requests before it in proportion to their cost.
+ */
+export function WeekModels({ models }: { models: { model: string; share: number }[] }) {
+  const families = new Map<string, number>();
+  for (const m of models) {
+    const word = m.model.split("-")[1] ?? m.model;
+    const family = word[0].toUpperCase() + word.slice(1);
+    families.set(family, (families.get(family) ?? 0) + m.share);
+  }
+  const rows = [...families].filter(([, share]) => share >= 0.0005).sort((a, b) => b[1] - a[1]);
+  if (rows.length === 0) return null;
+  return (
+    <div className="week">
+      <div className="limit-head">
+        <span>Неделя · по моделям</span>
+      </div>
+      <ul className="split">
+        {rows.map(([family, share]) => (
+          <li key={family}>
+            <span>{family}</span>
+            <span>{pct(share)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 const WINDOW_NAMES: Record<string, string> = {
   "5h": "Лимит на 5 часов",
+  "7d_oi": "Недельный лимит Fable",
 };
 
-/** Shorter windows (5 hours), when Anthropic reports them. */
+/** Limits besides the account's weekly one, when Anthropic reports them: 5 hours, and the week of Fable alone. */
 export function LimitBars({ limits }: { limits: Limit[] }) {
   const shown = limits.filter((l) => WINDOW_NAMES[l.window]);
   if (shown.length === 0) return null;
