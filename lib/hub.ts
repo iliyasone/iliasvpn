@@ -70,6 +70,8 @@ export interface HubMe {
   key: HubKey;
   limits: HubLimit[];
   week_start: number;
+  /** Part of the weekly limit Anthropic gave back mid-week (0..1) and when; null if none. */
+  week_returned?: { share: number; at: number } | null;
 }
 
 export interface HubOverview {
