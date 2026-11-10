@@ -1137,6 +1137,21 @@ code {
   height: 100%;
 }
 
+.week-bar {
+  position: relative;
+}
+
+/* The usual weekly limit on a bar that got longer by the limit Anthropic gave back. */
+.week-mark {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--text);
+}
+
 .dot {
   display: inline-block;
   width: 10px;

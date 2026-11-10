@@ -6,6 +6,7 @@ import { CopyButton } from "./CopyButton";
 import {
   DailyChart,
   LimitBars,
+  type Returned,
   WeekBar,
   WeekModels,
   ModelList,
@@ -63,6 +64,7 @@ interface Overview {
   keys: Key[];
   limits: Limit[];
   week_baseline: number | null;
+  week_returned?: Returned | null;
   /** Part of the weekly limit each model used this week. */
   week_models?: { model: string; share: number }[];
   week: Totals;
@@ -76,6 +78,8 @@ interface Overview {
 interface Week {
   start: number;
   reset: number;
+  /** Limit Anthropic gave back mid-week; the week's real usage is `utilization` plus its share. */
+  returned?: Returned | null;
   /** Already used when the hub first saw the week (usage before the hub). */
   baseline: number | null;
   /** Last value the hub saw. */
@@ -259,6 +263,7 @@ export function HubAdmin({ hub }: { hub: string }) {
               .filter((p) => p.spend.weekLimit > 0)
               .map((p) => ({ label: p.main.name, color: p.main.color, value: p.spend.weekLimit }))}
             restLabel={data.week_baseline === null ? "Без хаба" : "До хаба и мимо него"}
+            returned={data.week_returned}
           />
           <WeekModels models={data.week_models ?? []} />
           <LimitBars limits={data.limits} />
@@ -436,7 +441,7 @@ function WeekByDay({ people, weeks }: { people: Person[]; weeks: Week[] }) {
             {shortDate(mskDate(week.start))} – {shortDate(mskDate(week.reset))}
           </b>
           <span className="admin-meta">
-            {current ? "эта неделя" : "прошла"} · использовано <b className="weeknav-used">{week.utilization === null ? "нет данных" : pct(week.utilization)}</b>
+            {current ? "эта неделя" : "прошла"} · использовано <b className="weeknav-used">{week.utilization === null ? "нет данных" : pct(week.utilization + (week.returned?.share ?? 0))}</b>
           </span>
         </span>
         <button type="button" className="chip chip-small" disabled={index === 0} onClick={() => go(index - 1)} aria-label="Неделя позже">
@@ -480,7 +485,8 @@ function WeekByDay({ people, weeks }: { people: Person[]; weeks: Week[] }) {
         Пунктир — ровный темп, {pct(pace)} лимита в день.
         <br />
         Сброс {moment(week.reset)}
-        {week.baseline ? `; до хаба уже было ${pct(week.baseline)}` : ""}.
+        {week.baseline ? `; до хаба уже было ${pct(week.baseline)}` : ""}
+        {week.returned ? `; ${moment(week.returned.at)} Anthropic вернул ${pct(week.returned.share)}` : ""}.
       </p>
       <div className="byday-list">
         <p className="byday-title">

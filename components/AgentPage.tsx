@@ -24,6 +24,7 @@ export function AgentPage({ me }: { me: HubMe }) {
         <WeekBar
           limits={me.limits}
           segments={[{ label: `${key.name} — вы`, color: key.color, value: key.week_limit }]}
+          returned={me.week_returned}
           restLabel="Остальные"
         />
         <LimitBars limits={me.limits} />

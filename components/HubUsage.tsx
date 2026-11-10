@@ -48,6 +48,12 @@ export function ago(ts: number | null | undefined): string {
   return `${Math.round(s / 86400)} дн назад`;
 }
 
+/** Part of the weekly limit Anthropic gave back mid-week (0..1) and when. */
+export interface Returned {
+  share: number;
+  at: number;
+}
+
 export interface Segment {
   label: string;
   color: string;
@@ -59,24 +65,30 @@ const REST_COLOR = "var(--rest)";
 
 /**
  * The account's weekly limit as one bar: a colored part per key (estimated from requests
- * through the hub), the rest of the used part in gray, and what is left.
+ * through the hub), the rest of the used part in gray, and what is left. When Anthropic gave
+ * limit back mid-week, the bar is the limit plus what came back, with a mark at the usual limit.
  */
 export function WeekBar({
   limits,
   segments,
   restLabel,
+  returned,
 }: {
   limits: Limit[];
   segments: Segment[];
   restLabel: string;
+  returned?: Returned | null;
 }) {
   const week = limits.find((l) => l.window === "7d");
   if (!week) {
     return <p className="step-note">Лимиты появятся после первого запроса через хаб.</p>;
   }
   const used = Math.min(1, week.utilization);
+  const back = returned?.share ?? 0;
+  const spent = used + back;
+  const full = 1 + back;
   const keyed = [...segments].sort((a, b) => b.value - a.value);
-  const rest = Math.max(0, used - keyed.reduce((sum, s) => sum + s.value, 0));
+  const rest = Math.max(0, spent - keyed.reduce((sum, s) => sum + s.value, 0));
   const parts = [...keyed, { label: restLabel, color: REST_COLOR, value: rest }];
   return (
     <div className="week">
@@ -84,14 +96,25 @@ export function WeekBar({
         <span>Неделя · весь аккаунт</span>
         <span className="limit-pct">осталось {Math.round((1 - used) * 100)}%</span>
       </div>
-      <div className="limit-track week-track">
-        {parts.map((p) => (
-          <div key={p.label} title={`${p.label}: ${pct(p.value)}`} style={{ width: `${p.value * 100}%`, background: p.color }} />
-        ))}
+      <div className="week-bar">
+        <div className="limit-track week-track">
+          {parts.map((p) => (
+            <div key={p.label} title={`${p.label}: ${pct(p.value)}`} style={{ width: `${(p.value / full) * 100}%`, background: p.color }} />
+          ))}
+        </div>
+        {back > 0 && <span className="week-mark" style={{ left: `${100 / full}%` }} title="Обычный недельный лимит" />}
       </div>
-      <p className="limit-note">
-        Использовано {Math.round(used * 100)}% · сброс {when(week.reset)} МСК
-      </p>
+      {back > 0 ? (
+        <p className="limit-note">
+          Потрачено {Math.round(spent * 100)}% обычного лимита · Anthropic вернул {Math.round(back * 100)}% {when(returned?.at)}
+          <br />
+          Черта — обычный лимит · сброс {when(week.reset)} МСК
+        </p>
+      ) : (
+        <p className="limit-note">
+          Использовано {Math.round(used * 100)}% · сброс {when(week.reset)} МСК
+        </p>
+      )}
       <ul className="split">
         {parts.map((p) => (
           <li key={p.label}>
