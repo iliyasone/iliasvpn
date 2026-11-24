@@ -4,7 +4,7 @@ import { cookies, headers } from "next/headers";
 /** Public address of the Claude Code hub (CLIProxyAPI with a key/usage service in front). */
 export const HUB_URL = (process.env.HUB_URL || "").replace(/\/$/, "");
 /** Public address of the Gemini proxy (gemini.mjs in claude-hub): the Gemini API behind hub keys. */
-export const GEMINI_URL = "https://gemini.sheetlife.app";
+export const GEMINI_URL = "https://gemini.t9chat.com";
 export const HUB_KEY_COOKIE = "hubkey";
 /** Set by middleware when the key came in the URL, so the page renders on the first request (agents fetch without cookies). */
 export const HUB_KEY_HEADER = "x-hub-key";
