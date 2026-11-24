@@ -82,7 +82,7 @@ redirect to `/claude?key=…`.
   on screen, copy buttons copy it), and how to connect T3 Code and Claude Code.
 - `/gemini` — this key's Gemini spend (today, 7 and 30 days), Ciao downloads
   from its latest release, and the one link to paste into Ciao:
-  `https://gemini.sheetlife.app/?key=<key>` (the Gemini proxy in claude-hub).
+  `https://gemini.t9chat.com/?key=<key>` (the Gemini proxy in claude-hub).
 - `/blancvpn` — install, login by code, BlancVPN emails.
 - `/admin` (admin keys only) — spend today, over 7 days and all time (Claude and
   Gemini), the weekly limit split by person, the part of the weekly limit used each
